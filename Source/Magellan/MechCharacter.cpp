@@ -13,6 +13,8 @@ AMechCharacter::AMechCharacter()
 
 	Torso = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Torso"));
 	Torso->AttachTo(RootComponent);
+
+	JumpMaxHoldTime = MaxJumpTime;
 }
 
 // Called when the game starts or when spawned
@@ -65,32 +67,35 @@ void AMechCharacter::MoveForward(float Value)
 // Jump
 void AMechCharacter::StartJump()
 {
-
+	Jump();
 }
 
 void AMechCharacter::EndJump()
 {
-
+	StopJumping();
 }
 
 void AMechCharacter::UpdateTorso(float DeltaTime)
 {
+	// Get Mouse inputs
 	float X;
 	float Y;
 	UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetInputMouseDelta(X, Y);
 	
+	// Set and clamp Aim
 	FRotator MRotator = FRotator(Y, X, 0.0f);
-	FRotator CurrentR = Torso->GetRelativeTransform().Rotator();
-
 	AimComponent->AddRelativeRotation(MRotator);
 	FRotator AimRotation = AimComponent->GetRelativeTransform().Rotator();
 	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -10.0f, 80.0f);
 	AimComponent->SetRelativeRotation(AimRotation);
 
+	// Interp rotation for torso
+	FRotator CurrentR = Torso->GetRelativeTransform().Rotator();
 	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
 	Torso->SetRelativeRotation(InterpRotator);
 }
+
 
 // Print to screen
 // GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, TEXT("hello"));

@@ -45,6 +45,9 @@ protected:
 	float LateralMoveScalar = 0.001f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float MaxJumpTime = 5.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float TurnSpeed = 50.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
