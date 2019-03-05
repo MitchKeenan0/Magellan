@@ -9,7 +9,8 @@ USCBasicLargeRifle::USCBasicLargeRifle()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
-	// ...
+	SpawnLocationComp = CreateDefaultSubobject<USceneComponent>(TEXT("SpawnLocationComp"));
+	SpawnLocationComp->SetupAttachment(this);
 }
 
 
@@ -18,8 +19,7 @@ void USCBasicLargeRifle::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
-	
+	GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Basic Large Rifle says Hello"));
 }
 
 
@@ -34,10 +34,16 @@ void USCBasicLargeRifle::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 
 void USCBasicLargeRifle::StartFire()
 {
-
+	FVector Loc = GetComponentLocation();
+	FRotator Rot = GetComponentRotation();
 }
 
 void USCBasicLargeRifle::EndFire()
+{
+
+}
+
+void USCBasicLargeRifle::Fire()
 {
 
 }

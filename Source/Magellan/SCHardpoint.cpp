@@ -18,7 +18,6 @@ void USCHardpoint::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
 	
 }
 

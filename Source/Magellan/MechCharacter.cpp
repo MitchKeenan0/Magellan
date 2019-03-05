@@ -22,6 +22,7 @@ void AMechCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	BuildTech();
 }
 
 // Called every frame
@@ -86,7 +87,7 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	FRotator MRotator = FRotator(Y, X, 0.0f);
 	AimComponent->AddRelativeRotation(MRotator);
 	FRotator AimRotation = AimComponent->GetRelativeTransform().Rotator();
-	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -10.0f, 80.0f);
+	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -15.0f, 80.0f);
 	AimComponent->SetRelativeRotation(AimRotation);
 
 	// Interp rotation for torso
@@ -94,6 +95,31 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
 	Torso->SetRelativeRotation(InterpRotator);
+}
+
+void AMechCharacter::BuildTech()
+{
+	if (Tech != nullptr)
+	{
+		USceneComponent* NewTech = NewObject<USceneComponent>(Tech);
+		if (NewTech != nullptr)
+		{
+			NewTech->RegisterComponentWithWorld(GetWorld());
+			NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepRelativeTransform);
+			NewTech->SetRelativeLocation(FVector::ZeroVector);
+
+
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, TEXT("Mech spawned Tech"));
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("Mech spawn Tech failed"));
+		}
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Mech has no Tech to spawn"));
+	}
 }
 
 

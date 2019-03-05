@@ -30,7 +30,7 @@ protected:
 	void StartJump();
 	void EndJump();
 
-	
+	void BuildTech();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Body)
 	USceneComponent* AimComponent;
@@ -58,6 +58,14 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float TorsoMinPitch = -6.0f;
+
+
+	// Tech
+	UPROPERTY(EditDefaultsOnly, Category = "Tech")
+	TSubclassOf<USceneComponent> Tech;
+
+	UPROPERTY(BlueprintReadWrite, Category = "Tech")
+	USceneComponent* MyTech = nullptr;
 
 public:	
 	// Called every frame

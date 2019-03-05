@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "Magellan.h"
 #include "Components/SceneComponent.h"
 #include "SCBasicLargeRifle.generated.h"
 
@@ -24,10 +24,16 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	USceneComponent* SpawnLocationComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* RifleMesh;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AActor> AmmoType;
+
+	UFUNCTION()
+	void Fire();
 
 public:	
 	// Called every frame
