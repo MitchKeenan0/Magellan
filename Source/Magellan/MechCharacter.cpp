@@ -54,12 +54,11 @@ void AMechCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 void AMechCharacter::MoveRight(float Value)
 {
 	AddMovementInput(GetMesh()->GetRightVector(), Value * MoveSpeed * LateralMoveScalar);
-	
+
 	FRotator NewRotation = GetActorRotation();
 	NewRotation.Yaw += (Value * GetWorld()->DeltaTimeSeconds * TurnSpeed);
 	SetActorRotation(NewRotation);
 }
-
 void AMechCharacter::MoveForward(float Value)
 {
 	AddMovementInput(GetMesh()->GetForwardVector(), Value * MoveSpeed);
@@ -70,7 +69,6 @@ void AMechCharacter::StartJump()
 {
 	Jump();
 }
-
 void AMechCharacter::EndJump()
 {
 	StopJumping();
@@ -99,26 +97,17 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 
 void AMechCharacter::BuildTech()
 {
-	if (Tech != nullptr)
+	if (TechSubclass != nullptr)
 	{
-		USceneComponent* NewTech = NewObject<USceneComponent>(Tech);
+		FActorSpawnParameters SpawnInfo;
+		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		ATechComponent* NewTech = GetWorld()->SpawnActor<ATechComponent>(TechSubclass, GetActorLocation(), GetActorRotation(), SpawnInfo);
 		if (NewTech != nullptr)
 		{
-			NewTech->RegisterComponentWithWorld(GetWorld());
-			NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepRelativeTransform);
-			NewTech->SetRelativeLocation(FVector::ZeroVector);
-
-
-			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, TEXT("Mech spawned Tech"));
+			NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepWorldTransform);
+			NewTech->SetActorRelativeLocation(FVector(-40.0f, 150.0f, 80.0f));
 		}
-		else
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Red, TEXT("Mech spawn Tech failed"));
-		}
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Mech has no Tech to spawn"));
 	}
 }
 

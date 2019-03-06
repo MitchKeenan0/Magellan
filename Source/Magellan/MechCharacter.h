@@ -4,6 +4,7 @@
 
 #include "Magellan.h"
 #include "GameFramework/Character.h"
+#include "TechComponent.h"
 #include "MechCharacter.generated.h"
 
 UCLASS()
@@ -32,10 +33,10 @@ protected:
 
 	void BuildTech();
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Body)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	USceneComponent* AimComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Body)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	USkeletalMeshComponent* Torso;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
@@ -62,10 +63,10 @@ protected:
 
 	// Tech
 	UPROPERTY(EditDefaultsOnly, Category = "Tech")
-	TSubclassOf<USceneComponent> Tech;
+	TSubclassOf<ATechComponent> TechSubclass;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Tech")
-	USceneComponent* MyTech = nullptr;
+	ATechComponent* EquippedTech = nullptr;
 
 public:	
 	// Called every frame
