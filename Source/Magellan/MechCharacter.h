@@ -31,6 +31,7 @@ protected:
 	void StartJump();
 	void EndJump();
 
+	UFUNCTION(BlueprintCallable)
 	void BuildTech();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
