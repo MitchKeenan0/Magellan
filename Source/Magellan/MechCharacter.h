@@ -4,7 +4,7 @@
 
 #include "Magellan.h"
 #include "GameFramework/Character.h"
-#include "TechComponent.h"
+#include "TechActor.h"
 #include "MechCharacter.generated.h"
 
 UCLASS()
@@ -64,10 +64,10 @@ protected:
 
 	// Tech
 	UPROPERTY(EditDefaultsOnly, Category = "Tech")
-	TSubclassOf<ATechComponent> TechSubclass;
+	TSubclassOf<ATechActor> TechActorSubclass;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Tech")
-	ATechComponent* EquippedTech = nullptr;
+	ATechActor* EquippedTechActor = nullptr;
 
 public:	
 	// Called every frame

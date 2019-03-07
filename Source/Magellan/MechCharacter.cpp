@@ -85,7 +85,7 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	FRotator MRotator = FRotator(Y, X, 0.0f);
 	AimComponent->AddRelativeRotation(MRotator);
 	FRotator AimRotation = AimComponent->GetRelativeTransform().Rotator();
-	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -15.0f, 80.0f);
+	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -25.0f, 80.0f);
 	AimComponent->SetRelativeRotation(AimRotation);
 
 	// Interp rotation for torso
@@ -97,12 +97,12 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 
 void AMechCharacter::BuildTech()
 {
-	if (TechSubclass != nullptr)
+	if (TechActorSubclass != nullptr)
 	{
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		ATechComponent* NewTech = GetWorld()->SpawnActor<ATechComponent>(TechSubclass, GetActorLocation(), GetActorRotation(), SpawnInfo);
+		ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(TechActorSubclass, GetActorLocation(), GetActorRotation(), SpawnInfo);
 		if (NewTech != nullptr)
 		{
 			NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepWorldTransform);
