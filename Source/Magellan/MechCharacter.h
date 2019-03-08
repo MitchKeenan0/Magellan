@@ -5,6 +5,7 @@
 #include "Magellan.h"
 #include "GameFramework/Character.h"
 #include "TechActor.h"
+//#include "PaperSpriteComponent.h"
 #include "MechCharacter.generated.h"
 
 UCLASS()
@@ -34,11 +35,23 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void BuildTech();
 
+	UFUNCTION(BlueprintCallable)
+	void OffsetCamera(FVector Offset, FRotator Rotation, float FOV);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	USceneComponent* AimComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	USkeletalMeshComponent* Torso;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	USpringArmComponent* SpringArmComp;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	UCameraComponent* CameraComp;
+
+	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+	UPaperSpriteComponent* ControlPanelSprite;*/
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float MoveSpeed = 100.0f;

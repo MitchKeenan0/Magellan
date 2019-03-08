@@ -14,6 +14,20 @@ AMechCharacter::AMechCharacter()
 	Torso = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Torso"));
 	Torso->AttachTo(RootComponent);
 
+	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
+	SpringArmComp->AttachTo(AimComponent);
+	SpringArmComp->SetRelativeLocation(FVector(10.0f, 0.0f, -10.0f));
+	SpringArmComp->TargetArmLength = -20.0f;
+	SpringArmComp->bEnableCameraLag = true;
+	SpringArmComp->CameraLagSpeed = 10.0f;
+	SpringArmComp->bEnableCameraRotationLag = true;
+	SpringArmComp->CameraRotationLagSpeed = 8.0f;
+	SpringArmComp->CameraLagMaxDistance = 15.0f;
+
+	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
+	CameraComp->AttachTo(SpringArmComp);
+	CameraComp->FieldOfView = 100.0f;
+
 	JumpMaxHoldTime = MaxJumpTime;
 }
 
@@ -30,7 +44,8 @@ void AMechCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if ((Controller != nullptr) && (Controller->IsLocalController()))
+	if ((Controller != nullptr) && (Controller->IsLocalController())
+		&& !(Controller->ActorHasTag("MechBuilder")))
 	{
 		UpdateTorso(DeltaTime);
 	}
@@ -109,6 +124,13 @@ void AMechCharacter::BuildTech()
 			NewTech->SetActorRelativeLocation(FVector(-40.0f, 150.0f, 80.0f));
 		}
 	}
+}
+
+void AMechCharacter::OffsetCamera(FVector Offset, FRotator Rotation, float FOV)
+{
+	SpringArmComp->SetRelativeLocation(Offset);
+	CameraComp->FieldOfView = FOV;
+	SpringArmComp->RelativeRotation = Rotation;
 }
 
 
