@@ -23,9 +23,13 @@ private:
 	UFUNCTION(BlueprintCallable)
 	TArray<ATechActor*> GetBuilderTechByTag(FName Tag);
 
+
 public:
 	// Sets default values for this character's properties
 	AMechCharacter();
+
+	UFUNCTION()
+	FVector GetLookVector();
 
 protected:
 	// Called when the game starts or when spawned
@@ -36,8 +40,10 @@ protected:
 	void StartJump();
 	void EndJump();
 
+	void PrimaryFire();
+
 	UFUNCTION(BlueprintCallable)
-	void BuildTech();
+	void BuildTech(int TechID, int TechHardpoint);
 
 	UFUNCTION(BlueprintCallable)
 	void OffsetCamera(FVector Offset, FRotator Rotation, float FOV);

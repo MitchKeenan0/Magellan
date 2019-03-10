@@ -38,7 +38,7 @@ void AMechCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	BuildTech();
+	//BuildTech(0);
 }
 
 // Called every frame
@@ -60,6 +60,7 @@ void AMechCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	// Actions
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMechCharacter::StartJump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AMechCharacter::EndJump);
+	PlayerInputComponent->BindAction("PrimaryFire", IE_Pressed, this, &AMechCharacter::PrimaryFire);
 
 	// Axes
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMechCharacter::MoveRight);
@@ -111,32 +112,32 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	Torso->SetRelativeRotation(InterpRotator);
 }
 
-void AMechCharacter::BuildTech()
+FVector AMechCharacter::GetLookVector()
 {
-	int NumTechs = Outfit->HardpointTechs.Num();
-	if (NumTechs > 0)
-	{
-		for (int i = 0; i < NumTechs; ++i)
-		{
-			ATechActor* NewTech = Outfit->HardpointTechs[i];
-			if (NewTech != nullptr)
-			{
-				NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepWorldTransform);
+	FVector Result = AimComponent->GetForwardVector();
+	return Result;
+}
 
-				FVector SetLocation;
-				switch (i)
-				{
-					case 0: SetLocation = FVector(-20.0f, 140.0f, 65.0f);
-						break;
-					case 1: SetLocation = FVector(-20.0f, -140.0f, 65.0f);
-						break;
-					default: break;
-				}
-				
-				NewTech->SetActorRelativeLocation(SetLocation);
-				NewTech->SetActorRelativeRotation(FRotator::ZeroRotator);
-			}
-		}
+void AMechCharacter::PrimaryFire()
+{
+	ATechActor* MyPrimaryTech = Outfit->HardpointTechs[0];
+	if (MyPrimaryTech != nullptr)
+	{
+		MyPrimaryTech->ActivateTech();
+	}
+}
+
+void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
+{
+	ATechActor* NewTech = Outfit->HardpointTechs[TechID];
+	if (NewTech != nullptr)
+	{
+		NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepWorldTransform);
+
+		FVector SetLocation = Outfit->HardpointLocations[TechHardpoint];
+		NewTech->SetActorRelativeLocation(SetLocation);
+		
+		NewTech->SetActorRelativeRotation(FRotator::ZeroRotator);
 	}
 }
 
@@ -161,6 +162,7 @@ TArray<ATechActor*> AMechCharacter::GetBuilderTechByTag(FName Tag)
 				{
 					AvailableTechPointers.Add(NewTech);
 					Result.Add(NewTech);
+					Outfit->HardpointTechs.Add(NewTech);
 					GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Spawned new tech"));
 				}
 				else
