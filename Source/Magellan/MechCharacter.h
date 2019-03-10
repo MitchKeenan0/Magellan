@@ -5,6 +5,7 @@
 #include "Magellan.h"
 #include "GameFramework/Character.h"
 #include "TechActor.h"
+#include "MechOutfitComponent.h"
 //#include "PaperSpriteComponent.h"
 #include "MechCharacter.generated.h"
 
@@ -18,6 +19,9 @@ private:
 	float InternalMoveSpeed = 0.0f;
 
 	void UpdateTorso(float DeltaTime);
+
+	UFUNCTION(BlueprintCallable)
+	TArray<ATechActor*> GetBuilderTechByTag(FName Tag);
 
 public:
 	// Sets default values for this character's properties
@@ -44,11 +48,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	USkeletalMeshComponent* Torso;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
+	UMechOutfitComponent* Outfit;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	USpringArmComponent* SpringArmComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComp;
+
+
 
 	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UPaperSpriteComponent* ControlPanelSprite;*/
@@ -81,6 +90,12 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Tech")
 	ATechActor* EquippedTechActor = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TArray<TSubclassOf<ATechActor>> AvailableTech;
+
+	UPROPERTY(EditDefaultsOnly)
+	TArray<ATechActor*> AvailableTechPointers;
 
 public:	
 	// Called every frame

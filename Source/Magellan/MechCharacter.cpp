@@ -14,6 +14,8 @@ AMechCharacter::AMechCharacter()
 	Torso = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Torso"));
 	Torso->AttachTo(RootComponent);
 
+	Outfit = CreateDefaultSubobject<UMechOutfitComponent>(TEXT("Outfit"));
+
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
 	SpringArmComp->AttachTo(AimComponent);
 	SpringArmComp->SetRelativeLocation(FVector(10.0f, 0.0f, -10.0f));
@@ -44,8 +46,7 @@ void AMechCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if ((Controller != nullptr) && (Controller->IsLocalController())
-		&& !(Controller->ActorHasTag("MechBuilder")))
+	if ((Controller != nullptr) && (Controller->IsLocalController()))
 	{
 		UpdateTorso(DeltaTime);
 	}
@@ -112,18 +113,83 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 
 void AMechCharacter::BuildTech()
 {
-	if (TechActorSubclass != nullptr)
+	int NumTechs = Outfit->HardpointTechs.Num();
+	if (NumTechs > 0)
 	{
-		FActorSpawnParameters SpawnInfo;
-		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-		ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(TechActorSubclass, GetActorLocation(), GetActorRotation(), SpawnInfo);
-		if (NewTech != nullptr)
+		for (int i = 0; i < NumTechs; ++i)
 		{
-			NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepWorldTransform);
-			NewTech->SetActorRelativeLocation(FVector(-40.0f, 150.0f, 80.0f));
+			ATechActor* NewTech = Outfit->HardpointTechs[i];
+			if (NewTech != nullptr)
+			{
+				NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepWorldTransform);
+
+				FVector SetLocation;
+				switch (i)
+				{
+					case 0: SetLocation = FVector(-20.0f, 140.0f, 65.0f);
+						break;
+					case 1: SetLocation = FVector(-20.0f, -140.0f, 65.0f);
+						break;
+					default: break;
+				}
+				
+				NewTech->SetActorRelativeLocation(SetLocation);
+				NewTech->SetActorRelativeRotation(FRotator::ZeroRotator);
+			}
 		}
 	}
+}
+
+TArray<ATechActor*> AMechCharacter::GetBuilderTechByTag(FName Tag)
+{
+	TArray<ATechActor*> Result;
+	
+	int numTechs = AvailableTech.Num();
+	int numTechPtrs = AvailableTechPointers.Num();
+	
+	// Init Tech
+	if ((numTechPtrs == 0.0f) && (numTechs > 0))
+	{
+		for (int i = 0; i < numTechs; ++i)
+		{
+			FActorSpawnParameters SpawnInfo;
+			SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[i], SpawnInfo);
+			if (NewTech != nullptr)
+			{
+				if (NewTech->ActorHasTag(Tag))
+				{
+					AvailableTechPointers.Add(NewTech);
+					Result.Add(NewTech);
+					GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Spawned new tech"));
+				}
+				else
+				{
+					NewTech->Destroy();
+				}
+			}
+		}
+	}
+
+	if (AvailableTechPointers.Num() > 0)
+	{
+		int nTechPtrs = AvailableTechPointers.Num();
+
+		// Compare against existing tech
+		for (int i = 0; i < nTechPtrs; ++i)
+		{
+			ATechActor* ThisTech = AvailableTechPointers[i];
+			if (ThisTech->ActorHasTag(Tag)
+				 && !(AvailableTechPointers.Contains(ThisTech))
+				&& !(Result.Contains(ThisTech)))
+			{
+				Result.Add(AvailableTechPointers[i]);
+			}
+		}
+	}
+
+
+	return Result;
 }
 
 void AMechCharacter::OffsetCamera(FVector Offset, FRotator Rotation, float FOV)
