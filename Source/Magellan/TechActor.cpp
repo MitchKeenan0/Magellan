@@ -76,12 +76,6 @@ void ATechActor::UpdateArticulation(float DeltaTime)
 
 		FVector InterpVector = FMath::VInterpConstantTo(CurrentVector, TargetVector, DeltaTime, ArticulationSpeed);
 		SetActorRotation(InterpVector.Rotation());
-
-		GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, TEXT("Articulating..."));
-	}
-	else
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, TEXT("MyMechCharacter is nullptr"));
 	}
 }
 
