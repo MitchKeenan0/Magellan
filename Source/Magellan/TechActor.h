@@ -22,10 +22,16 @@ public:
 	void ActivateTech();
 
 	UFUNCTION()
+	void InitTechActor(AMechCharacter* TechOwner);
+
+	UFUNCTION()
 	UTechComponent* GetTechComponent() { return MyTechComponent; }
 
-	UPROPERTY(EditDefaultsOnly)
-	FVector TechLocation = FVector::ZeroVector;
+	UFUNCTION()
+	TSubclassOf<AActor> GetAmmoType() { return AmmoType; }
+
+	UFUNCTION()
+	USceneComponent* GetEmitPoint() { return EmitPoint; }
 
 protected:
 	// Called when the game starts or when spawned
@@ -38,7 +44,13 @@ protected:
 	USceneComponent* TechRoot;
 
 	UPROPERTY(EditDefaultsOnly)
+	USceneComponent* EmitPoint;
+
+	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* TechMesh;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UTechComponent> TechComponentSubclass;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UTechComponent* MyTechComponent;
@@ -48,6 +60,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	bool bArticulated = true;
+
+	UPROPERTY(EditDefaultsOnly)
+	float ArticulationSpeed = 10.0f;
 
 	UPROPERTY(BlueprintReadOnly)
 	AMechCharacter* MyMechCharacter;

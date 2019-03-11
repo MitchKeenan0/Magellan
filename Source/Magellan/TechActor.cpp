@@ -15,7 +15,10 @@ ATechActor::ATechActor()
 	TechMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TechMesh"));
 	TechMesh->SetupAttachment(RootComponent);
 
-	MyTechComponent = CreateDefaultSubobject<UTechComponent>(TEXT("MyTechComponent"));
+	EmitPoint = CreateDefaultSubobject<USceneComponent>(TEXT("EmitPoint"));
+	EmitPoint->SetupAttachment(RootComponent);
+
+	//MyTechComponent = CreateDefaultSubobject<UTechComponent>(TEXT("MyTechComponent"));
 	
 }
 
@@ -24,6 +27,28 @@ void ATechActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	// Initialize Tech Component
+	if (TechComponentSubclass != nullptr)
+	{
+		MyTechComponent = NewObject<UTechComponent>(this, *TechComponentSubclass);
+		if (MyTechComponent != nullptr)
+		{
+			MyTechComponent->RegisterComponent();
+			if (AmmoType != nullptr)
+			{
+				MyTechComponent->AmmoType = AmmoType;
+				MyTechComponent->EmitPoint = EmitPoint;
+			}
+		}
+	}
+}
+
+void ATechActor::InitTechActor(AMechCharacter* TechOwner)
+{
+	if (TechOwner != nullptr)
+	{
+		MyMechCharacter = TechOwner;
+	}
 }
 
 // Called every frame
@@ -31,6 +56,10 @@ void ATechActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (bArticulated)
+	{
+		UpdateArticulation(DeltaTime);
+	}
 }
 
 void ATechActor::ActivateTech()
@@ -43,7 +72,16 @@ void ATechActor::UpdateArticulation(float DeltaTime)
 	if (MyMechCharacter != nullptr)
 	{
 		FVector TargetVector = MyMechCharacter->GetLookVector();
+		FVector CurrentVector = GetActorForwardVector();
 
+		FVector InterpVector = FMath::VInterpConstantTo(CurrentVector, TargetVector, DeltaTime, ArticulationSpeed);
+		SetActorRotation(InterpVector.Rotation());
+
+		GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, TEXT("Articulating..."));
+	}
+	else
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, TEXT("MyMechCharacter is nullptr"));
 	}
 }
 

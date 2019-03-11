@@ -160,6 +160,7 @@ TArray<ATechActor*> AMechCharacter::GetBuilderTechByTag(FName Tag)
 			{
 				if (NewTech->ActorHasTag(Tag))
 				{
+					NewTech->InitTechActor(this);
 					AvailableTechPointers.Add(NewTech);
 					Result.Add(NewTech);
 					Outfit->HardpointTechs.Add(NewTech);

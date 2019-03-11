@@ -33,7 +33,7 @@ void UTechComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 
 void UTechComponent::ActivateTechComponent()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 50.0f, FColor::White, TEXT("BANG"));
+	
 }
 
 void UTechComponent::DeactivateTechComponent()

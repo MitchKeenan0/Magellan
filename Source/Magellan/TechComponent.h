@@ -17,10 +17,16 @@ public:
 	UTechComponent();
 
 	UFUNCTION(BlueprintCallable)
-	void ActivateTechComponent();
+	virtual void ActivateTechComponent();
 
 	UFUNCTION(BlueprintCallable)
-	void DeactivateTechComponent();
+	virtual void DeactivateTechComponent();
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AActor> AmmoType;
+
+	UPROPERTY(EditDefaultsOnly)
+	USceneComponent* EmitPoint;
 
 protected:
 	// Called when the game starts
