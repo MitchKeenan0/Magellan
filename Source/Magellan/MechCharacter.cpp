@@ -61,6 +61,7 @@ void AMechCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMechCharacter::StartJump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AMechCharacter::EndJump);
 	PlayerInputComponent->BindAction("PrimaryFire", IE_Pressed, this, &AMechCharacter::PrimaryFire);
+	PlayerInputComponent->BindAction("Centre", IE_Pressed, this, &AMechCharacter::CentreMech);
 
 	// Axes
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMechCharacter::MoveRight);
@@ -91,6 +92,35 @@ void AMechCharacter::EndJump()
 	StopJumping();
 }
 
+void AMechCharacter::CentreMech()
+{
+	if (Torso != nullptr)
+	{
+		Torso->SetRelativeRotation(FRotator::ZeroRotator);
+	}
+
+	if (AimComponent != nullptr)
+	{
+		AimComponent->SetRelativeRotation(FRotator::ZeroRotator);
+	}
+
+	if (Outfit != nullptr)
+	{
+		int NumTechs = Outfit->HardpointTechs.Num();
+		if (NumTechs > 0)
+		{
+			for (int i = 0; i < NumTechs; ++i)
+			{
+				ATechActor* ThisTech = Outfit->HardpointTechs[i];
+				if (ThisTech != nullptr)
+				{
+					ThisTech->SetActorRotation(Torso->GetComponentRotation());
+				}
+			}
+		}
+	}
+}
+
 void AMechCharacter::UpdateTorso(float DeltaTime)
 {
 	// Get Mouse inputs
@@ -107,23 +137,75 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 
 	// Interp rotation for torso
 	FRotator CurrentR = Torso->GetRelativeTransform().Rotator();
-	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
+	FRotator InterpRotator = FMath::RInterpConstantTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
 	Torso->SetRelativeRotation(InterpRotator);
 }
 
 FVector AMechCharacter::GetLookVector()
 {
-	FVector Result = AimComponent->GetForwardVector();
+	// Initial aim, in case ray hits nothing
+	FVector Result = AimComponent->GetComponentLocation() + (AimComponent->GetForwardVector() * 10000.0f);
+
+	// Linecast ingredients
+	bool HitResult = false;
+	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjects;
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_PhysicsBody));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Destructible));
+	FHitResult Hit;
+	
+	// Ignore Torso & Tech
+	TArray<AActor*> IgnoredActors;
+	IgnoredActors.Add(Torso->GetOwner());
+	int NumTechs = Outfit->HardpointTechs.Num();
+	if (NumTechs > 0)
+	{
+		for (int i = 0; i < NumTechs; ++i)
+		{
+			if (Outfit->HardpointTechs[i] != nullptr)
+			{
+				IgnoredActors.Add(Outfit->HardpointTechs[i]);
+			}
+		}
+	}
+	
+	// Pew pew
+	FVector RaycastVector = AimComponent->GetForwardVector() * 50000.0f;
+	FVector Start = AimComponent->GetComponentLocation();
+	FVector End = Start + RaycastVector;
+
+	HitResult = UKismetSystemLibrary::LineTraceSingleForObjects(
+		this,
+		Start,
+		End,
+		TraceObjects,
+		false,
+		IgnoredActors,
+		EDrawDebugTrace::None,
+		Hit,
+		true,
+		FLinearColor::Red, FLinearColor::Red, 5.0f);
+
+	if (HitResult)
+	{
+		Result = Hit.ImpactPoint;
+	}
+
 	return Result;
 }
 
 void AMechCharacter::PrimaryFire()
 {
-	ATechActor* MyPrimaryTech = Outfit->HardpointTechs[0];
-	if (MyPrimaryTech != nullptr)
+	if (Outfit->HardpointTechs.Num() > 0)
 	{
-		MyPrimaryTech->ActivateTech();
+		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[0];
+		if (MyPrimaryTech != nullptr)
+		{
+			MyPrimaryTech->ActivateTech();
+		}
 	}
 }
 

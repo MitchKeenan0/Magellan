@@ -39,6 +39,7 @@ protected:
 	void MoveForward(float Value);
 	void StartJump();
 	void EndJump();
+	void CentreMech();
 
 	void PrimaryFire();
 

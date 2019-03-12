@@ -71,11 +71,39 @@ void ATechActor::UpdateArticulation(float DeltaTime)
 {
 	if (MyMechCharacter != nullptr)
 	{
-		FVector TargetVector = MyMechCharacter->GetLookVector();
+		FVector TargetVector = MyMechCharacter->GetLookVector() - GetActorLocation();
 		FVector CurrentVector = GetActorForwardVector();
-
-		FVector InterpVector = FMath::VInterpConstantTo(CurrentVector, TargetVector, DeltaTime, ArticulationSpeed);
+		FVector InterpVector = FMath::VInterpTo(CurrentVector, TargetVector, DeltaTime, ArticulationSpeed);
 		SetActorRotation(InterpVector.Rotation());
+		
+		
+		// DebugBeam
+		bool HitResult = false;
+		TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjects;
+		TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+		TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+		TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+		TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_PhysicsBody));
+		TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Destructible));
+		FHitResult Hit;
+		TArray<AActor*> IgnoredActors;
+
+		FVector RaycastVector = GetActorForwardVector() * 50000.0f;
+		FVector Start = GetActorLocation();
+		FVector End = Start + RaycastVector;
+
+		// Pew pew
+		HitResult = UKismetSystemLibrary::LineTraceSingleForObjects(
+			this,
+			Start,
+			End,
+			TraceObjects,
+			false,
+			IgnoredActors,
+			EDrawDebugTrace::ForOneFrame,
+			Hit,
+			true,
+			FLinearColor::White, FLinearColor::Red, 5.0f);
 	}
 }
 
