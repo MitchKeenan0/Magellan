@@ -60,6 +60,8 @@ void ATechActor::Tick(float DeltaTime)
 	{
 		UpdateArticulation(DeltaTime);
 	}
+
+	UpdateAimPoint();
 }
 
 void ATechActor::ActivateTech()
@@ -75,35 +77,41 @@ void ATechActor::UpdateArticulation(float DeltaTime)
 		FVector CurrentVector = GetActorForwardVector();
 		FVector InterpVector = FMath::VInterpTo(CurrentVector, TargetVector, DeltaTime, ArticulationSpeed);
 		SetActorRotation(InterpVector.Rotation());
-		
-		
-		// DebugBeam
-		bool HitResult = false;
-		TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjects;
-		TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
-		TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
-		TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
-		TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_PhysicsBody));
-		TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Destructible));
-		FHitResult Hit;
-		TArray<AActor*> IgnoredActors;
+	}
+}
 
-		FVector RaycastVector = GetActorForwardVector() * 50000.0f;
-		FVector Start = GetActorLocation();
-		FVector End = Start + RaycastVector;
+void ATechActor::UpdateAimPoint()
+{
+	bool HitResult = false;
+	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjects;
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_PhysicsBody));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Destructible));
+	FHitResult Hit;
+	TArray<AActor*> IgnoredActors;
 
-		// Pew pew
-		HitResult = UKismetSystemLibrary::LineTraceSingleForObjects(
-			this,
-			Start,
-			End,
-			TraceObjects,
-			false,
-			IgnoredActors,
-			EDrawDebugTrace::ForOneFrame,
-			Hit,
-			true,
-			FLinearColor::White, FLinearColor::Red, 5.0f);
+	FVector RaycastVector = EmitPoint->GetForwardVector() * 50000.0f;
+	FVector Start = EmitPoint->GetComponentLocation();
+	FVector End = Start + RaycastVector;
+
+	// Pew pew
+	HitResult = UKismetSystemLibrary::LineTraceSingleForObjects(
+		this,
+		Start,
+		End,
+		TraceObjects,
+		false,
+		IgnoredActors,
+		EDrawDebugTrace::None,
+		Hit,
+		true,
+		FLinearColor::White, FLinearColor::Red, 0.1f);
+
+	if (HitResult && (!Hit.Actor->ActorHasTag("Ammo")))
+	{
+		AimPoint = Hit.ImpactPoint;
 	}
 }
 

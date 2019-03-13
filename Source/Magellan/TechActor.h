@@ -33,9 +33,18 @@ public:
 	UFUNCTION()
 	USceneComponent* GetEmitPoint() { return EmitPoint; }
 
+	UFUNCTION()
+	FVector GetAimPoint() { return AimPoint; }
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UPROPERTY()
+	FVector AimPoint;
+
+	UFUNCTION()
+	void UpdateAimPoint();
 
 	UFUNCTION()
 	void UpdateArticulation(float DeltaTime);

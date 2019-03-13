@@ -28,8 +28,11 @@ public:
 	// Sets default values for this character's properties
 	AMechCharacter();
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	FVector GetLookVector();
+
+	UFUNCTION(BlueprintCallable)
+	FVector GetAimPoint();
 
 protected:
 	// Called when the game starts or when spawned

@@ -137,7 +137,7 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 
 	// Interp rotation for torso
 	FRotator CurrentR = Torso->GetRelativeTransform().Rotator();
-	FRotator InterpRotator = FMath::RInterpConstantTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
+	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
 	Torso->SetRelativeRotation(InterpRotator);
 }
@@ -194,6 +194,20 @@ FVector AMechCharacter::GetLookVector()
 		Result = Hit.ImpactPoint;
 	}
 
+	return Result;
+}
+
+FVector AMechCharacter::GetAimPoint()
+{
+	FVector Result = FVector::ZeroVector;
+	if (Outfit->HardpointTechs.Num() > 0)
+	{
+		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[0];
+		if (MyPrimaryTech != nullptr)
+		{
+			Result = MyPrimaryTech->GetAimPoint();
+		}
+	}
 	return Result;
 }
 
