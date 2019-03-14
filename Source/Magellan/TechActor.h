@@ -64,6 +64,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UTechComponent* MyTechComponent;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	FName TechName = FName("");
+
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AActor> AmmoType;
 

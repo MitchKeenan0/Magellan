@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "TechComponent.generated.h"
 
+class AMechCharacter;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class MAGELLAN_API UTechComponent : public UActorComponent
@@ -15,6 +16,9 @@ class MAGELLAN_API UTechComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UTechComponent();
+
+	UFUNCTION()
+	void SetOwner(AMechCharacter* NewOwner);
 
 	UFUNCTION(BlueprintCallable)
 	virtual void ActivateTechComponent();
@@ -31,6 +35,9 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	UPROPERTY(BlueprintReadOnly)
+	AMechCharacter* MyMechCharacter;
 
 public:	
 	// Called every frame

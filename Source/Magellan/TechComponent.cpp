@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "TechComponent.h"
+#include "MechCharacter.h"
 
 // Sets default values for this component's properties
 UTechComponent::UTechComponent()
@@ -20,6 +21,15 @@ void UTechComponent::BeginPlay()
 
 	// ...
 	
+}
+
+
+void UTechComponent::SetOwner(AMechCharacter* NewOwner)
+{
+	if (NewOwner != nullptr)
+	{
+		MyMechCharacter = NewOwner;
+	}
 }
 
 

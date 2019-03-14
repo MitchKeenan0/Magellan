@@ -16,6 +16,9 @@ void UGunTechComponent::Fire(TSubclassOf<AActor> Ammo)
 	AActor* NewBullet = GetWorld()->SpawnActor<AActor>(Ammo, EmitPoint->GetComponentLocation(), EmitPoint->GetComponentRotation(), SpawnInfo);
 	if (NewBullet != nullptr)
 	{
-		// other stuff...
+		if (MyMechCharacter != nullptr)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Gun aquired mech character"));
+		}
 	}
 }

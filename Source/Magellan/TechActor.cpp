@@ -27,20 +27,6 @@ void ATechActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// Initialize Tech Component
-	if (TechComponentSubclass != nullptr)
-	{
-		MyTechComponent = NewObject<UTechComponent>(this, *TechComponentSubclass);
-		if (MyTechComponent != nullptr)
-		{
-			MyTechComponent->RegisterComponent();
-			if (AmmoType != nullptr)
-			{
-				MyTechComponent->AmmoType = AmmoType;
-				MyTechComponent->EmitPoint = EmitPoint;
-			}
-		}
-	}
 }
 
 void ATechActor::InitTechActor(AMechCharacter* TechOwner)
@@ -48,6 +34,22 @@ void ATechActor::InitTechActor(AMechCharacter* TechOwner)
 	if (TechOwner != nullptr)
 	{
 		MyMechCharacter = TechOwner;
+
+		// Initialize Tech Component
+		if (TechComponentSubclass != nullptr)
+		{
+			MyTechComponent = NewObject<UTechComponent>(this, *TechComponentSubclass);
+			if (MyTechComponent != nullptr)
+			{
+				MyTechComponent->RegisterComponent();
+				if (AmmoType != nullptr)
+				{
+					MyTechComponent->AmmoType = AmmoType;
+					MyTechComponent->EmitPoint = EmitPoint;
+					MyTechComponent->SetOwner(MyMechCharacter);
+				}
+			}
+		}
 	}
 }
 
@@ -91,6 +93,10 @@ void ATechActor::UpdateAimPoint()
 	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Destructible));
 	FHitResult Hit;
 	TArray<AActor*> IgnoredActors;
+	if (MyMechCharacter != nullptr)
+	{
+		IgnoredActors.Add(MyMechCharacter);
+	}
 
 	FVector RaycastVector = EmitPoint->GetForwardVector() * 50000.0f;
 	FVector Start = EmitPoint->GetComponentLocation();
@@ -112,6 +118,10 @@ void ATechActor::UpdateAimPoint()
 	if (HitResult && (!Hit.Actor->ActorHasTag("Ammo")))
 	{
 		AimPoint = Hit.ImpactPoint;
+	}
+	else
+	{
+		AimPoint = GetActorLocation() + (GetActorForwardVector() * 20000.0f);
 	}
 }
 
