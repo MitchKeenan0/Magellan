@@ -49,12 +49,15 @@ protected:
 	void PrimaryFire();
 
 	UFUNCTION(BlueprintCallable)
+	void InitOptions();
+
+	UFUNCTION(BlueprintCallable)
 	void BuildTech(int TechID, int TechHardpoint);
 
 	UFUNCTION(BlueprintCallable)
 	void TrimOutfit();
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void RemovePart(int TechID, int HardpointIndex);
 
 	UFUNCTION(BlueprintCallable)

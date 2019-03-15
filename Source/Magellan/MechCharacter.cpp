@@ -225,17 +225,50 @@ void AMechCharacter::PrimaryFire()
 
 void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 {
-	ATechActor* NewTech = Outfit->HardpointTechs[TechID];
-	if (NewTech != nullptr)
+	if (AvailableTechPointers.Num() >= (TechID + 1))
 	{
-		NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepWorldTransform);
+		ATechActor* NewTech = AvailableTechPointers[TechID];
+		if (NewTech != nullptr)
+		{
+			FActorSpawnParameters SpawnInfo;
+			SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			
+			ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[TechID], SpawnInfo);
+			if (NewTech != nullptr)
+			{
+				Outfit->HardpointTechs.Insert(NewTech, TechHardpoint);
+				///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Fitted new tech"));
 
-		FVector SetLocation = Outfit->HardpointLocations[TechHardpoint];
-		NewTech->SetActorRelativeLocation(SetLocation);
-		
-		NewTech->SetActorRelativeRotation(FRotator::ZeroRotator);
+				NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepWorldTransform);
 
-		NewTech->InitTechActor(this);
+				FVector SetLocation = Outfit->HardpointLocations[TechHardpoint];
+				NewTech->SetActorRelativeLocation(SetLocation);
+
+				NewTech->SetActorRelativeRotation(FRotator::ZeroRotator);
+
+				NewTech->InitTechActor(this);
+			}
+		}
+	}
+}
+
+void AMechCharacter::InitOptions()
+{
+	int numTechs = AvailableTech.Num();
+	if (numTechs)
+	{
+		FActorSpawnParameters SpawnInfo;
+		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		for (int i = 0; i < numTechs; ++i)
+		{
+			ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[i], SpawnInfo);
+			if (NewTech != nullptr)
+			{
+				AvailableTechPointers.Add(NewTech);
+				GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Spawned new tech"));
+			}
+		}
 	}
 }
 
@@ -243,52 +276,19 @@ TArray<ATechActor*> AMechCharacter::GetBuilderTechByTag(FName Tag)
 {
 	TArray<ATechActor*> Result;
 	
-	int numTechs = AvailableTech.Num();
 	int numTechPtrs = AvailableTechPointers.Num();
-	
-	// Init Tech
-	if ((numTechPtrs == 0.0f) && (numTechs > 0))
+	if (numTechPtrs > 0)
 	{
-		for (int i = 0; i < numTechs; ++i)
-		{
-			FActorSpawnParameters SpawnInfo;
-			SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[i], SpawnInfo);
-			if (NewTech != nullptr)
-			{
-				if (NewTech->ActorHasTag(Tag))
-				{
-					///NewTech->InitTechActor(this);
-					AvailableTechPointers.Add(NewTech);
-					Result.Add(NewTech);
-					Outfit->HardpointTechs.Add(NewTech);
-					GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Spawned new tech"));
-				}
-				else
-				{
-					NewTech->Destroy();
-				}
-			}
-		}
-	}
-
-	if (AvailableTechPointers.Num() > 0)
-	{
-		int nTechPtrs = AvailableTechPointers.Num();
-
 		// Compare against existing tech
-		for (int i = 0; i < nTechPtrs; ++i)
+		for (int i = 0; i < numTechPtrs; ++i)
 		{
 			ATechActor* ThisTech = AvailableTechPointers[i];
-			if (ThisTech->ActorHasTag(Tag)
-				 && !(AvailableTechPointers.Contains(ThisTech))
-				&& !(Result.Contains(ThisTech)))
+			if (ThisTech->ActorHasTag(Tag))
 			{
 				Result.Add(AvailableTechPointers[i]);
 			}
 		}
 	}
-
 
 	return Result;
 }
@@ -302,33 +302,31 @@ void AMechCharacter::OffsetCamera(FVector Offset, FRotator Rotation, float FOV)
 
 void AMechCharacter::TrimOutfit()
 {
-	if (Outfit != nullptr)
+	int NumTechs = AvailableTechPointers.Num();
+	if (NumTechs > 0)
 	{
-		int NumTechs = Outfit->HardpointTechs.Num();
-		if (NumTechs > 0)
+		for (int i = 0; i < NumTechs; ++i)
 		{
-			for (int i = 0; i < NumTechs; ++i)
+			if (AvailableTechPointers[i] != nullptr)
 			{
-				if (Outfit->HardpointTechs[i] != nullptr)
-				{
-					if (!Outfit->HardpointTechs[i]->IsEquipped())
-					{
-						RemovePart(i, 0);
-					}
-				}
+				AvailableTechPointers[i]->Destroy();
 			}
 		}
+
+		AvailableTechPointers.Empty();
 	}
 }
 
 void AMechCharacter::RemovePart(int TechID, int HardpointIndex)
 {
-	if (Outfit != nullptr)
+	int NumTechs = Outfit->HardpointTechs.Num();
+	if (NumTechs >= (HardpointIndex + 1))
 	{
-		if (Outfit->HardpointTechs[TechID] != nullptr)
+		if (Outfit->HardpointTechs[HardpointIndex] != nullptr)
 		{
-			Outfit->HardpointTechs.RemoveAt(TechID);
-			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("hello goodbye"));
+			Outfit->HardpointTechs[HardpointIndex]->Destroy();
+			Outfit->HardpointTechs.RemoveAt(HardpointIndex);
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Removed Tech"));
 		}
 	}
 }
