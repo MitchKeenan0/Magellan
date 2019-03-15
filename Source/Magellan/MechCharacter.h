@@ -34,6 +34,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FVector GetAimPoint();
 
+	
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -48,6 +50,12 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void BuildTech(int TechID, int TechHardpoint);
+
+	UFUNCTION(BlueprintCallable)
+	void TrimOutfit();
+
+	UFUNCTION()
+	void RemovePart(int TechID, int HardpointIndex);
 
 	UFUNCTION(BlueprintCallable)
 	void OffsetCamera(FVector Offset, FRotator Rotation, float FOV);

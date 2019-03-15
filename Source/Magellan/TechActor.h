@@ -19,6 +19,9 @@ public:
 	ATechActor();
 
 	UFUNCTION()
+	bool IsEquipped();
+
+	UFUNCTION()
 	void ActivateTech();
 
 	UFUNCTION()

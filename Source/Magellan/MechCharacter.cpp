@@ -9,15 +9,15 @@ AMechCharacter::AMechCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 
 	AimComponent = CreateDefaultSubobject<USceneComponent>(TEXT("AimComponent"));
-	AimComponent->AttachTo(RootComponent);
+	AimComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
 	Torso = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Torso"));
-	Torso->AttachTo(RootComponent);
+	Torso->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
 	Outfit = CreateDefaultSubobject<UMechOutfitComponent>(TEXT("Outfit"));
 
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
-	SpringArmComp->AttachTo(AimComponent);
+	SpringArmComp->AttachToComponent(AimComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	SpringArmComp->SetRelativeLocation(FVector(10.0f, 0.0f, -10.0f));
 	SpringArmComp->TargetArmLength = -20.0f;
 	SpringArmComp->bEnableCameraLag = true;
@@ -27,7 +27,7 @@ AMechCharacter::AMechCharacter()
 	SpringArmComp->CameraLagMaxDistance = 15.0f;
 
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComp"));
-	CameraComp->AttachTo(SpringArmComp);
+	CameraComp->AttachToComponent(SpringArmComp, FAttachmentTransformRules::KeepRelativeTransform);
 	CameraComp->FieldOfView = 100.0f;
 
 	JumpMaxHoldTime = MaxJumpTime;
@@ -234,6 +234,8 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 		NewTech->SetActorRelativeLocation(SetLocation);
 		
 		NewTech->SetActorRelativeRotation(FRotator::ZeroRotator);
+
+		NewTech->InitTechActor(this);
 	}
 }
 
@@ -256,7 +258,7 @@ TArray<ATechActor*> AMechCharacter::GetBuilderTechByTag(FName Tag)
 			{
 				if (NewTech->ActorHasTag(Tag))
 				{
-					NewTech->InitTechActor(this);
+					///NewTech->InitTechActor(this);
 					AvailableTechPointers.Add(NewTech);
 					Result.Add(NewTech);
 					Outfit->HardpointTechs.Add(NewTech);
@@ -296,6 +298,39 @@ void AMechCharacter::OffsetCamera(FVector Offset, FRotator Rotation, float FOV)
 	SpringArmComp->SetRelativeLocation(Offset);
 	CameraComp->FieldOfView = FOV;
 	SpringArmComp->RelativeRotation = Rotation;
+}
+
+void AMechCharacter::TrimOutfit()
+{
+	if (Outfit != nullptr)
+	{
+		int NumTechs = Outfit->HardpointTechs.Num();
+		if (NumTechs > 0)
+		{
+			for (int i = 0; i < NumTechs; ++i)
+			{
+				if (Outfit->HardpointTechs[i] != nullptr)
+				{
+					if (!Outfit->HardpointTechs[i]->IsEquipped())
+					{
+						RemovePart(i, 0);
+					}
+				}
+			}
+		}
+	}
+}
+
+void AMechCharacter::RemovePart(int TechID, int HardpointIndex)
+{
+	if (Outfit != nullptr)
+	{
+		if (Outfit->HardpointTechs[TechID] != nullptr)
+		{
+			Outfit->HardpointTechs.RemoveAt(TechID);
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("hello goodbye"));
+		}
+	}
 }
 
 

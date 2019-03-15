@@ -68,7 +68,10 @@ void ATechActor::Tick(float DeltaTime)
 
 void ATechActor::ActivateTech()
 {
-	MyTechComponent->ActivateTechComponent();
+	if (MyTechComponent != nullptr)
+	{
+		MyTechComponent->ActivateTechComponent();
+	}
 }
 
 void ATechActor::UpdateArticulation(float DeltaTime)
@@ -123,5 +126,15 @@ void ATechActor::UpdateAimPoint()
 	{
 		AimPoint = GetActorLocation() + (GetActorForwardVector() * 20000.0f);
 	}
+}
+
+bool ATechActor::IsEquipped()
+{
+	bool Result = false;
+	if (MyMechCharacter != nullptr)
+	{
+		Result = true;
+	}
+	return Result;
 }
 
