@@ -44,6 +44,8 @@ protected:
 	void MoveForward(float Value);
 	void StartJump();
 	void EndJump();
+	void StartBrake();
+	void EndBrake();
 	void CentreMech();
 
 	void PrimaryFire();
@@ -90,6 +92,9 @@ protected:
 	float LateralMoveScalar = 0.001f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float BrakeStrength = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float MaxJumpTime = 5.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
@@ -106,9 +111,6 @@ protected:
 
 
 	// Tech
-	UPROPERTY(EditDefaultsOnly, Category = "Tech")
-	TSubclassOf<ATechActor> TechActorSubclass;
-
 	UPROPERTY(BlueprintReadWrite, Category = "Tech")
 	ATechActor* EquippedTechActor = nullptr;
 

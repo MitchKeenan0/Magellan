@@ -60,6 +60,8 @@ void AMechCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	// Actions
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMechCharacter::StartJump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AMechCharacter::EndJump);
+	PlayerInputComponent->BindAction("Brake", IE_Pressed, this, &AMechCharacter::StartBrake);
+	PlayerInputComponent->BindAction("Brake", IE_Released, this, &AMechCharacter::EndBrake);
 	PlayerInputComponent->BindAction("PrimaryFire", IE_Pressed, this, &AMechCharacter::PrimaryFire);
 	PlayerInputComponent->BindAction("Centre", IE_Pressed, this, &AMechCharacter::CentreMech);
 
@@ -73,6 +75,7 @@ void AMechCharacter::MoveRight(float Value)
 {
 	AddMovementInput(GetMesh()->GetRightVector(), Value * MoveSpeed * LateralMoveScalar);
 
+	// & Turning
 	FRotator NewRotation = GetActorRotation();
 	NewRotation.Yaw += (Value * GetWorld()->DeltaTimeSeconds * TurnSpeed);
 	SetActorRotation(NewRotation);
@@ -90,6 +93,25 @@ void AMechCharacter::StartJump()
 void AMechCharacter::EndJump()
 {
 	StopJumping();
+}
+
+// Brake
+void AMechCharacter::StartBrake()
+{
+	GetCharacterMovement()->MaxWalkSpeed = BrakeStrength;
+	if (GetCharacterMovement()->IsFalling())
+	{
+		GetCharacterMovement()->MaxAcceleration = 1.0f;
+	}
+}
+
+void AMechCharacter::EndBrake()
+{
+	GetCharacterMovement()->MaxWalkSpeed = 7200.0f;
+	if (GetCharacterMovement()->IsFalling())
+	{
+		GetCharacterMovement()->MaxAcceleration = 999.0f;
+	}
 }
 
 void AMechCharacter::CentreMech()
@@ -200,6 +222,7 @@ FVector AMechCharacter::GetLookVector()
 FVector AMechCharacter::GetAimPoint()
 {
 	FVector Result = FVector::ZeroVector;
+	
 	if (Outfit->HardpointTechs.Num() > 0)
 	{
 		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[0];
@@ -207,6 +230,19 @@ FVector AMechCharacter::GetAimPoint()
 		{
 			Result = MyPrimaryTech->GetAimPoint();
 		}
+		else
+		{
+			ATechActor* MyPrimaryTech = Outfit->HardpointTechs[1];
+			if (MyPrimaryTech != nullptr)
+			{
+				Result = MyPrimaryTech->GetAimPoint();
+			}
+		}
+	}
+	
+	if (Result == FVector::ZeroVector)
+	{
+		Result = GetActorLocation() + (CameraComp->GetForwardVector() * 100.0f);
 	}
 	return Result;
 }
@@ -219,6 +255,14 @@ void AMechCharacter::PrimaryFire()
 		if (MyPrimaryTech != nullptr)
 		{
 			MyPrimaryTech->ActivateTech();
+		}
+		else
+		{
+			ATechActor* MyPrimaryTech = Outfit->HardpointTechs[1];
+			if (MyPrimaryTech != nullptr)
+			{
+				MyPrimaryTech->ActivateTech();
+			}
 		}
 	}
 }
@@ -237,6 +281,7 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 			if (NewTech != nullptr)
 			{
 				Outfit->HardpointTechs.Insert(NewTech, TechHardpoint);
+				
 				///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Fitted new tech"));
 
 				NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepWorldTransform);
@@ -255,8 +300,10 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 void AMechCharacter::InitOptions()
 {
 	int numTechs = AvailableTech.Num();
-	if (numTechs)
+	if (numTechs > 0)
 	{
+		Outfit->HardpointTechs.Init(nullptr, numTechs);
+
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 

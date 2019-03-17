@@ -32,6 +32,14 @@ void UTechComponent::SetOwner(AMechCharacter* NewOwner)
 	}
 }
 
+void UTechComponent::SetParticles(UParticleSystem* Partis)
+{
+	if (Partis != nullptr)
+	{
+		MyParticles = Partis;
+	}
+}
+
 
 // Called every frame
 void UTechComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

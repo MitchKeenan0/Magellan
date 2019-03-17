@@ -42,11 +42,14 @@ void ATechActor::InitTechActor(AMechCharacter* TechOwner)
 			if (MyTechComponent != nullptr)
 			{
 				MyTechComponent->RegisterComponent();
+				
+				MyTechComponent->SetParticles(TechParticles);
+				MyTechComponent->SetOwner(MyMechCharacter);
+				MyTechComponent->EmitPoint = EmitPoint;
+
 				if (AmmoType != nullptr)
 				{
 					MyTechComponent->AmmoType = AmmoType;
-					MyTechComponent->EmitPoint = EmitPoint;
-					MyTechComponent->SetOwner(MyMechCharacter);
 				}
 			}
 		}
@@ -71,6 +74,7 @@ void ATechActor::ActivateTech()
 	if (MyTechComponent != nullptr)
 	{
 		MyTechComponent->ActivateTechComponent();
+		///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, FString::Printf(TEXT("%s Bang"), *GetName()));
 	}
 }
 

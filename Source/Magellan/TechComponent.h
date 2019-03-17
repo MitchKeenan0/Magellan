@@ -20,6 +20,9 @@ public:
 	UFUNCTION()
 	void SetOwner(AMechCharacter* NewOwner);
 
+	UFUNCTION()
+	void SetParticles(UParticleSystem* Partis);
+
 	UFUNCTION(BlueprintCallable)
 	virtual void ActivateTechComponent();
 
@@ -32,12 +35,19 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	USceneComponent* EmitPoint;
 
+	
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
 	UPROPERTY(BlueprintReadOnly)
 	AMechCharacter* MyMechCharacter;
+
+	UPROPERTY(BlueprintReadOnly)
+	UParticleSystem* MyParticles;
+
+	
 
 public:	
 	// Called every frame

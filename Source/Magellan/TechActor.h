@@ -62,6 +62,9 @@ protected:
 	UStaticMeshComponent* TechMesh;
 
 	UPROPERTY(EditDefaultsOnly)
+	UParticleSystem* TechParticles;
+
+	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UTechComponent> TechComponentSubclass;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
