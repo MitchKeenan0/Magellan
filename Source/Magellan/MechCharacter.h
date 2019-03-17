@@ -40,6 +40,12 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UFUNCTION(BlueprintCallable)
+	bool IsBraking() { return bBraking; }
+
+	UFUNCTION(BlueprintCallable)
+	FName GetEquippedTechName();
+
 	void MoveRight(float Value);
 	void MoveForward(float Value);
 	void StartJump();
@@ -47,8 +53,10 @@ protected:
 	void StartBrake();
 	void EndBrake();
 	void CentreMech();
+	void EquipSelection(float Value);
 
 	void PrimaryFire();
+	void PrimaryStopFire();
 
 	UFUNCTION(BlueprintCallable)
 	void InitOptions();
@@ -68,7 +76,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	USceneComponent* AimComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Body")
 	USkeletalMeshComponent* Torso;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
@@ -120,11 +128,20 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	TArray<ATechActor*> AvailableTechPointers;
 
+	UPROPERTY(BlueprintReadOnly)
+	float EquipSelectValue = 0;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+
+private:
+	UPROPERTY()
+	bool bBraking;
+
 
 };

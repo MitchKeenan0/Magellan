@@ -74,7 +74,14 @@ void ATechActor::ActivateTech()
 	if (MyTechComponent != nullptr)
 	{
 		MyTechComponent->ActivateTechComponent();
-		///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, FString::Printf(TEXT("%s Bang"), *GetName()));
+	}
+}
+
+void ATechActor::DeactivateTech()
+{
+	if (MyTechComponent != nullptr)
+	{
+		MyTechComponent->DeactivateTechComponent();
 	}
 }
 

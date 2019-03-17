@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "TechComponent.h"
+#include "ParticleHelper.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "BeamTechComponent.generated.h"
 
 /**
@@ -16,8 +19,15 @@ class MAGELLAN_API UBeamTechComponent : public UTechComponent
 	
 public:
 	virtual void ActivateTechComponent() override;
+	virtual void DeactivateTechComponent() override;
 
 protected:
 	UFUNCTION()
-	void Fire();
+	void StartFire();
+
+	UFUNCTION()
+	void StopFire();
+
+	UPROPERTY(BlueprintReadOnly)
+	UParticleSystemComponent* ActiveParticles;
 };

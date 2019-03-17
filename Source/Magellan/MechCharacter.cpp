@@ -15,6 +15,7 @@ AMechCharacter::AMechCharacter()
 	Torso->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
 	Outfit = CreateDefaultSubobject<UMechOutfitComponent>(TEXT("Outfit"));
+	Outfit->RegisterComponent();
 
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
 	SpringArmComp->AttachToComponent(AimComponent, FAttachmentTransformRules::KeepRelativeTransform);
@@ -63,11 +64,13 @@ void AMechCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Brake", IE_Pressed, this, &AMechCharacter::StartBrake);
 	PlayerInputComponent->BindAction("Brake", IE_Released, this, &AMechCharacter::EndBrake);
 	PlayerInputComponent->BindAction("PrimaryFire", IE_Pressed, this, &AMechCharacter::PrimaryFire);
+	PlayerInputComponent->BindAction("PrimaryFire", IE_Released, this, &AMechCharacter::PrimaryStopFire);
 	PlayerInputComponent->BindAction("Centre", IE_Pressed, this, &AMechCharacter::CentreMech);
 
 	// Axes
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMechCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMechCharacter::MoveForward);
+	PlayerInputComponent->BindAxis("EquipSelect", this, &AMechCharacter::EquipSelection);
 }
 
 // Movement
@@ -101,8 +104,10 @@ void AMechCharacter::StartBrake()
 	GetCharacterMovement()->MaxWalkSpeed = BrakeStrength;
 	if (GetCharacterMovement()->IsFalling())
 	{
-		GetCharacterMovement()->MaxAcceleration = 1.0f;
+		GetCharacterMovement()->BrakingDecelerationFalling = GetCharacterMovement()->Velocity.Size();
+		GetCharacterMovement()->GravityScale = 0.3f;
 	}
+	bBraking = true;
 }
 
 void AMechCharacter::EndBrake()
@@ -110,8 +115,10 @@ void AMechCharacter::EndBrake()
 	GetCharacterMovement()->MaxWalkSpeed = 7200.0f;
 	if (GetCharacterMovement()->IsFalling())
 	{
-		GetCharacterMovement()->MaxAcceleration = 999.0f;
+		GetCharacterMovement()->BrakingDecelerationFalling = 50.0f;
+		GetCharacterMovement()->GravityScale = 1.0f;
 	}
+	bBraking = false;
 }
 
 void AMechCharacter::CentreMech()
@@ -141,6 +148,40 @@ void AMechCharacter::CentreMech()
 			}
 		}
 	}
+}
+
+void AMechCharacter::EquipSelection(float Value)
+{
+	if (Value != 0.0f)
+	{
+		PrimaryStopFire();
+		
+		EquipSelectValue = Value;
+
+		int MaxSafeValue = Outfit->HardpointTechs.Num() - 1;
+		if (EquipSelectValue > MaxSafeValue)
+		{
+			EquipSelectValue = MaxSafeValue;
+		}
+		if (EquipSelectValue < 0)
+		{
+			EquipSelectValue = 0;
+		}
+	}
+}
+
+FName AMechCharacter::GetEquippedTechName()
+{
+	FName Result = FName("None");
+	if (Outfit->HardpointTechs.Num() >= (EquipSelectValue + 1))
+	{
+		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[EquipSelectValue];
+		if (MyPrimaryTech != nullptr)
+		{
+			Result = MyPrimaryTech->GetTechName();
+		}
+	}
+	return Result;
 }
 
 void AMechCharacter::UpdateTorso(float DeltaTime)
@@ -223,20 +264,12 @@ FVector AMechCharacter::GetAimPoint()
 {
 	FVector Result = FVector::ZeroVector;
 	
-	if (Outfit->HardpointTechs.Num() > 0)
+	if (Outfit->HardpointTechs.Num() >= (EquipSelectValue + 1))
 	{
-		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[0];
+		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[EquipSelectValue];
 		if (MyPrimaryTech != nullptr)
 		{
 			Result = MyPrimaryTech->GetAimPoint();
-		}
-		else
-		{
-			ATechActor* MyPrimaryTech = Outfit->HardpointTechs[1];
-			if (MyPrimaryTech != nullptr)
-			{
-				Result = MyPrimaryTech->GetAimPoint();
-			}
 		}
 	}
 	
@@ -249,20 +282,24 @@ FVector AMechCharacter::GetAimPoint()
 
 void AMechCharacter::PrimaryFire()
 {
-	if (Outfit->HardpointTechs.Num() > 0)
+	if (Outfit->HardpointTechs.Num() >= (EquipSelectValue + 1))
 	{
-		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[0];
+		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[EquipSelectValue];
 		if (MyPrimaryTech != nullptr)
 		{
 			MyPrimaryTech->ActivateTech();
 		}
-		else
+	}
+}
+
+void AMechCharacter::PrimaryStopFire()
+{
+	if (Outfit->HardpointTechs.Num() >= (EquipSelectValue + 1))
+	{
+		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[EquipSelectValue];
+		if (MyPrimaryTech != nullptr)
 		{
-			ATechActor* MyPrimaryTech = Outfit->HardpointTechs[1];
-			if (MyPrimaryTech != nullptr)
-			{
-				MyPrimaryTech->ActivateTech();
-			}
+			MyPrimaryTech->DeactivateTech();
 		}
 	}
 }
@@ -313,6 +350,7 @@ void AMechCharacter::InitOptions()
 			if (NewTech != nullptr)
 			{
 				AvailableTechPointers.Add(NewTech);
+				BuildTech(i, i);
 				GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Spawned new tech"));
 			}
 		}

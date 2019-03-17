@@ -25,6 +25,9 @@ public:
 	void ActivateTech();
 
 	UFUNCTION()
+	void DeactivateTech();
+
+	UFUNCTION()
 	void InitTechActor(AMechCharacter* TechOwner);
 
 	UFUNCTION()
@@ -38,6 +41,9 @@ public:
 
 	UFUNCTION()
 	FVector GetAimPoint() { return AimPoint; }
+
+	UFUNCTION()
+	FName GetTechName() { return TechName; }
 
 protected:
 	// Called when the game starts or when spawned
