@@ -15,7 +15,6 @@ AMechCharacter::AMechCharacter()
 	Torso->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
 	Outfit = CreateDefaultSubobject<UMechOutfitComponent>(TEXT("Outfit"));
-	Outfit->RegisterComponent();
 
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
 	SpringArmComp->AttachToComponent(AimComponent, FAttachmentTransformRules::KeepRelativeTransform);
@@ -38,8 +37,8 @@ AMechCharacter::AMechCharacter()
 void AMechCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	//BuildTech(0);
+
+	GetCharacterMovement()->MaxWalkSpeed = TopSpeed;
 }
 
 // Called every frame
@@ -49,6 +48,7 @@ void AMechCharacter::Tick(float DeltaTime)
 
 	if ((Controller != nullptr) && (Controller->IsLocalController()))
 	{
+		UpdateLean(DeltaTime);
 		UpdateTorso(DeltaTime);
 	}
 }
@@ -91,6 +91,7 @@ void AMechCharacter::MoveForward(float Value)
 // Jump
 void AMechCharacter::StartJump()
 {
+	EndBrake();
 	Jump();
 }
 void AMechCharacter::EndJump()
@@ -102,22 +103,24 @@ void AMechCharacter::EndJump()
 void AMechCharacter::StartBrake()
 {
 	GetCharacterMovement()->MaxWalkSpeed = BrakeStrength;
+	
 	if (GetCharacterMovement()->IsFalling())
 	{
 		GetCharacterMovement()->BrakingDecelerationFalling = GetCharacterMovement()->Velocity.Size();
-		GetCharacterMovement()->GravityScale = 0.3f;
 	}
+	
 	bBraking = true;
 }
 
 void AMechCharacter::EndBrake()
 {
-	GetCharacterMovement()->MaxWalkSpeed = 7200.0f;
+	GetCharacterMovement()->MaxWalkSpeed = TopSpeed;
+	
 	if (GetCharacterMovement()->IsFalling())
 	{
 		GetCharacterMovement()->BrakingDecelerationFalling = 50.0f;
-		GetCharacterMovement()->GravityScale = 1.0f;
 	}
+	
 	bBraking = false;
 }
 
@@ -195,7 +198,7 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	FRotator MRotator = FRotator(Y, X, 0.0f);
 	AimComponent->AddRelativeRotation(MRotator);
 	FRotator AimRotation = AimComponent->GetRelativeTransform().Rotator();
-	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -25.0f, 80.0f);
+	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, TorsoMinPitch, TorsoMaxPitch);
 	AimComponent->SetRelativeRotation(AimRotation);
 
 	// Interp rotation for torso
@@ -203,6 +206,31 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
 	Torso->SetRelativeRotation(InterpRotator);
+}
+
+void AMechCharacter::UpdateLean(float DeltaTime)
+{
+	FRotator Lean = FRotator::ZeroRotator;
+
+	FVector MyVelocity = GetCharacterMovement()->Velocity.GetSafeNormal();
+	FVector MyForward = GetActorForwardVector().GetSafeNormal();
+	float DotToVelocityForward = FVector::DotProduct(MyVelocity, MyForward);
+	FVector MyRight = GetActorRightVector().GetSafeNormal();
+	float DotToVelocityRight = FVector::DotProduct(MyVelocity, MyRight);
+
+	Lean.Pitch = DotToVelocityForward * -MoveTilt;
+	Lean.Yaw = GetActorRotation().Yaw;
+	Lean.Roll = DotToVelocityRight * -MoveTilt * 2.0f;
+
+	if (bBraking && (GetCharacterMovement()->Velocity.Size() > 5.0f))
+	{
+		Lean.Pitch *= -1.0f;
+		Lean.Roll *= -1.0f;
+	}
+
+	FRotator TargetRotation = Lean;
+	FRotator InterpLean = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, TorsoSpeed);
+	SetActorRotation(InterpLean);
 }
 
 FVector AMechCharacter::GetLookVector()
@@ -280,6 +308,13 @@ FVector AMechCharacter::GetAimPoint()
 	return Result;
 }
 
+FVector AMechCharacter::GetTorsoPoint()
+{
+	FVector TorsoDirection = Torso->GetForwardVector() * 20000.0f;
+	FVector Result = GetActorLocation() + TorsoDirection;
+	return Result;
+}
+
 void AMechCharacter::PrimaryFire()
 {
 	if (Outfit->HardpointTechs.Num() >= (EquipSelectValue + 1))
@@ -322,7 +357,7 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 				///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Fitted new tech"));
 
 				NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepWorldTransform);
-
+				
 				FVector SetLocation = Outfit->HardpointLocations[TechHardpoint];
 				NewTech->SetActorRelativeLocation(SetLocation);
 
@@ -351,7 +386,6 @@ void AMechCharacter::InitOptions()
 			{
 				AvailableTechPointers.Add(NewTech);
 				BuildTech(i, i);
-				GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Spawned new tech"));
 			}
 		}
 	}
@@ -411,7 +445,6 @@ void AMechCharacter::RemovePart(int TechID, int HardpointIndex)
 		{
 			Outfit->HardpointTechs[HardpointIndex]->Destroy();
 			Outfit->HardpointTechs.RemoveAt(HardpointIndex);
-			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Removed Tech"));
 		}
 	}
 }

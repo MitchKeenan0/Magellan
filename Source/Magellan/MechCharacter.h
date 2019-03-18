@@ -34,6 +34,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FVector GetAimPoint();
 
+	UFUNCTION(BlueprintCallable)
+	FVector GetTorsoPoint();
+
+	UFUNCTION(BlueprintCallable)
+	USkeletalMeshComponent* GetTorso() {return Torso;}
+
 	
 
 protected:
@@ -57,6 +63,8 @@ protected:
 
 	void PrimaryFire();
 	void PrimaryStopFire();
+
+	void UpdateLean(float DeltaTime);
 
 	UFUNCTION(BlueprintCallable)
 	void InitOptions();
@@ -100,6 +108,12 @@ protected:
 	float LateralMoveScalar = 0.001f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float TopSpeed = 7200.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float MoveTilt = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float BrakeStrength = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
@@ -112,10 +126,10 @@ protected:
 	float TorsoSpeed = 25.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
-	float TorsoMaxPitch = 60.0f;
+	float TorsoMinPitch = -25.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
-	float TorsoMinPitch = -6.0f;
+	float TorsoMaxPitch = 80.0f;
 
 
 	// Tech
