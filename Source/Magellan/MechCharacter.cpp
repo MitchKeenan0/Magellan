@@ -212,20 +212,35 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 {
 	FRotator Lean = FRotator::ZeroRotator;
 
+	// Setting up angular relations
 	FVector MyVelocity = GetCharacterMovement()->Velocity.GetSafeNormal();
 	FVector MyForward = GetActorForwardVector().GetSafeNormal();
 	float DotToVelocityForward = FVector::DotProduct(MyVelocity, MyForward);
 	FVector MyRight = GetActorRightVector().GetSafeNormal();
 	float DotToVelocityRight = FVector::DotProduct(MyVelocity, MyRight);
 
+	// Initial rotation
 	Lean.Pitch = DotToVelocityForward * -MoveTilt;
 	Lean.Yaw = GetActorRotation().Yaw;
 	Lean.Roll = DotToVelocityRight * -MoveTilt * 2.0f;
 
+	// Velocity mapped 0.0 -- 1.0
+	float a1 = 1.0f;
+	float a2 = TopSpeed;
+	float s = GetCharacterMovement()->Velocity.Size();
+	float b1 = 0.01f;
+	float b2 = 1.0f;
+	float t = b1 + (((s - a1) * (b2 - b1)) / (a2 - a1));
+	float ScaledVelocity = t * 1.68f;
+
+	Lean.Pitch *= ScaledVelocity;
+	Lean.Roll *= ScaledVelocity;
+
+	// Braking response
 	if (bBraking && (GetCharacterMovement()->Velocity.Size() > 5.0f))
 	{
 		Lean.Pitch *= -1.0f;
-		Lean.Roll *= -1.0f;
+		Lean.Roll *= 1.618f;
 	}
 
 	FRotator TargetRotation = Lean;
@@ -416,7 +431,7 @@ void AMechCharacter::OffsetCamera(FVector Offset, FRotator Rotation, float FOV)
 {
 	SpringArmComp->SetRelativeLocation(Offset);
 	CameraComp->FieldOfView = FOV;
-	SpringArmComp->RelativeRotation = Rotation;
+	SpringArmComp->SetWorldRotation(Rotation);
 }
 
 void AMechCharacter::TrimOutfit()
