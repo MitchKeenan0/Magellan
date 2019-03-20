@@ -21,6 +21,9 @@ public:
 	void SetOwner(AMechCharacter* NewOwner);
 
 	UFUNCTION()
+	AMechCharacter* GetCharacter() { return MyMechCharacter; };
+
+	UFUNCTION()
 	void SetParticles(UParticleSystem* Partis);
 
 	UFUNCTION(BlueprintCallable)

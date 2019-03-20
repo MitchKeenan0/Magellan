@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "GunTechComponent.h"
+#include "BulletActor.h"
 
 void UGunTechComponent::ActivateTechComponent()
 {
@@ -18,7 +19,11 @@ void UGunTechComponent::Fire(TSubclassOf<AActor> Ammo)
 	{
 		if (MyMechCharacter != nullptr)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Gun aquired mech character"));
+			ABulletActor* Bullet = Cast<ABulletActor>(NewBullet);
+			if (Bullet != nullptr)
+			{
+				Bullet->InitBullet(this);
+			}
 		}
 	}
 }

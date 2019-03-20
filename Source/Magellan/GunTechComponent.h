@@ -6,6 +6,8 @@
 #include "TechComponent.h"
 #include "GunTechComponent.generated.h"
 
+class ABulletActor;
+
 /**
  * 
  */
