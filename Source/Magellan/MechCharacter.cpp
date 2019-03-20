@@ -39,6 +39,8 @@ void AMechCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	GetCharacterMovement()->MaxWalkSpeed = TopSpeed;
+
+	EquipSelection(-1.0f);
 }
 
 // Called every frame
@@ -187,6 +189,35 @@ FName AMechCharacter::GetEquippedTechName()
 	return Result;
 }
 
+ATechActor* AMechCharacter::GetTechActor(int EquipIndex)
+{
+	ATechActor* Result = nullptr;
+
+	if (Outfit->HardpointTechs.Num() >= (EquipIndex + 1))
+	{
+		ATechActor* MyTech = Outfit->HardpointTechs[EquipIndex];
+		if (MyTech != nullptr)
+		{
+			Result = MyTech;
+		}
+	}
+
+	return Result;
+}
+
+ATechActor* AMechCharacter::GetEquippedTechActor()
+{
+	ATechActor* Result = nullptr;
+
+	ATechActor* MyTech = GetTechActor(EquipSelectValue);
+	if (MyTech != nullptr)
+	{
+		Result = MyTech;
+	}
+
+	return Result;
+}
+
 void AMechCharacter::UpdateTorso(float DeltaTime)
 {
 	// Get Mouse inputs
@@ -309,7 +340,7 @@ FVector AMechCharacter::GetAimPoint()
 	
 	if (Outfit->HardpointTechs.Num() >= (EquipSelectValue + 1))
 	{
-		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[EquipSelectValue];
+		ATechActor* MyPrimaryTech = GetTechActor(EquipSelectValue);
 		if (MyPrimaryTech != nullptr)
 		{
 			Result = MyPrimaryTech->GetAimPoint();
@@ -332,25 +363,19 @@ FVector AMechCharacter::GetTorsoPoint()
 
 void AMechCharacter::PrimaryFire()
 {
-	if (Outfit->HardpointTechs.Num() >= (EquipSelectValue + 1))
+	ATechActor* MyPrimaryTech = GetTechActor(EquipSelectValue);
+	if (MyPrimaryTech != nullptr)
 	{
-		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[EquipSelectValue];
-		if (MyPrimaryTech != nullptr)
-		{
-			MyPrimaryTech->ActivateTech();
-		}
+		MyPrimaryTech->ActivateTech();
 	}
 }
 
 void AMechCharacter::PrimaryStopFire()
 {
-	if (Outfit->HardpointTechs.Num() >= (EquipSelectValue + 1))
+	ATechActor* MyPrimaryTech = GetTechActor(EquipSelectValue);
+	if (MyPrimaryTech != nullptr)
 	{
-		ATechActor* MyPrimaryTech = Outfit->HardpointTechs[EquipSelectValue];
-		if (MyPrimaryTech != nullptr)
-		{
-			MyPrimaryTech->DeactivateTech();
-		}
+		MyPrimaryTech->DeactivateTech();
 	}
 }
 
@@ -371,7 +396,7 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 				
 				///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Fitted new tech"));
 
-				NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepWorldTransform);
+				NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepRelativeTransform);
 				
 				FVector SetLocation = Outfit->HardpointLocations[TechHardpoint];
 				NewTech->SetActorRelativeLocation(SetLocation);

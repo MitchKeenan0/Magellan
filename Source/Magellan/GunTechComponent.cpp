@@ -23,6 +23,7 @@ void UGunTechComponent::Fire(TSubclassOf<AActor> Ammo)
 			if (Bullet != nullptr)
 			{
 				Bullet->InitBullet(this);
+				Capacity -= 1.0f;
 			}
 		}
 	}

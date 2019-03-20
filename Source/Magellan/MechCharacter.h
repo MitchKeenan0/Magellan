@@ -52,6 +52,12 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	FName GetEquippedTechName();
 
+	UFUNCTION(BlueprintCallable)
+	ATechActor* GetTechActor(int EquipIndex);
+
+	UFUNCTION(BlueprintCallable)
+	ATechActor* GetEquippedTechActor();
+
 	void MoveRight(float Value);
 	void MoveForward(float Value);
 	void StartJump();

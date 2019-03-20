@@ -18,7 +18,7 @@ public:
 	UTechComponent();
 
 	UFUNCTION()
-	void SetOwner(AMechCharacter* NewOwner);
+	void InitTechComponent(AMechCharacter* NewOwner, float Cap);
 
 	UFUNCTION()
 	AMechCharacter* GetCharacter() { return MyMechCharacter; };
@@ -27,11 +27,15 @@ public:
 	void SetParticles(UParticleSystem* Partis);
 
 	UFUNCTION(BlueprintCallable)
+	float GetCapacity() { return Capacity; }
+	
+	UFUNCTION(BlueprintCallable)
 	virtual void ActivateTechComponent();
 
 	UFUNCTION(BlueprintCallable)
 	virtual void DeactivateTechComponent();
-
+	
+	
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AActor> AmmoType;
 
@@ -49,6 +53,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	UParticleSystem* MyParticles;
+
+	UPROPERTY(BlueprintReadOnly)
+	float Capacity = 0.0f;
 
 	
 

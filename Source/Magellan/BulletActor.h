@@ -28,7 +28,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	void Collide();
+	void Collide(AActor* OtherActor);
 
 	UPROPERTY(EditDefaultsOnly)
 	float ProjectileSpeed = 35000.0f;

@@ -63,7 +63,7 @@ void ABulletActor::InitBullet(UTechComponent* Shooter)
 }
 
 
-void ABulletActor::Collide()
+void ABulletActor::Collide(AActor* OtherActor)
 {
 	if (GetGameTimeSinceCreation() > 0.02f)
 	{
@@ -72,11 +72,18 @@ void ABulletActor::Collide()
 		// Hacky temp explosion
 		MeshComp->SetRelativeScale3D(FVector::OneVector * 5.0f);
 		ProjectileMovement->SetVelocityInLocalSpace(FVector::ZeroVector);
+		ProjectileMovement->ProjectileGravityScale = 0.33f;
 		SetLifeSpan(0.5f);
 		
-		if (MyTechComponent != nullptr)
+		if (MyMechCharacter != nullptr)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, TEXT("Hit"));
+			if (OtherActor != nullptr)
+			{
+				if (OtherActor->ActorHasTag("Mech"))
+				{
+					GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::White, TEXT("Hit"));
+				}
+			}
 		}
 	}
 }
@@ -85,7 +92,7 @@ void ABulletActor::OnBulletBeginOverlap(UPrimitiveComponent* OverlappedComponent
 {
 	if (bOverlap && !bHit)
 	{
-		Collide();
+		Collide(OtherActor);
 	}
 }
 
@@ -93,7 +100,7 @@ void ABulletActor::OnBulletHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 {
 	if (!bOverlap && !bHit)
 	{
-		Collide();
+		Collide(OtherActor);
 	}
 }
 

@@ -44,7 +44,7 @@ void ATechActor::InitTechActor(AMechCharacter* TechOwner)
 				MyTechComponent->RegisterComponent();
 				
 				MyTechComponent->SetParticles(TechParticles);
-				MyTechComponent->SetOwner(MyMechCharacter);
+				MyTechComponent->InitTechComponent(MyMechCharacter, Capacity);
 				MyTechComponent->EmitPoint = EmitPoint;
 
 				if (AmmoType != nullptr)
@@ -73,7 +73,10 @@ void ATechActor::ActivateTech()
 {
 	if (MyTechComponent != nullptr)
 	{
-		MyTechComponent->ActivateTechComponent();
+		if (MyTechComponent->GetCapacity() != 0.0f) /// -1 used by beams
+		{
+			MyTechComponent->ActivateTechComponent();
+		}
 	}
 }
 
@@ -149,3 +152,14 @@ bool ATechActor::IsEquipped()
 	return Result;
 }
 
+float ATechActor::GetCapacity()
+{
+	float Result = 0.0f;
+
+	if (MyTechComponent != nullptr)
+	{
+		Result = MyTechComponent->GetCapacity();
+	}
+
+	return Result;
+}

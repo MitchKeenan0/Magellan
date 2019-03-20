@@ -24,12 +24,15 @@ void UTechComponent::BeginPlay()
 }
 
 
-void UTechComponent::SetOwner(AMechCharacter* NewOwner)
+void UTechComponent::InitTechComponent(AMechCharacter* NewOwner, float Cap)
 {
 	if (NewOwner != nullptr)
 	{
 		MyMechCharacter = NewOwner;
+		Capacity = Cap;
 	}
+
+	// for later__ tie capacity to Output if (Cap == -1) 
 }
 
 void UTechComponent::SetParticles(UParticleSystem* Partis)

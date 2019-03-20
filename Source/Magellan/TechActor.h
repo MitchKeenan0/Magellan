@@ -21,6 +21,9 @@ public:
 	UFUNCTION()
 	bool IsEquipped();
 
+	UFUNCTION(BlueprintCallable)
+	float GetCapacity();
+
 	UFUNCTION()
 	void ActivateTech();
 
@@ -87,6 +90,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	float ArticulationSpeed = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+	float Capacity = 100.0f;
 
 	UPROPERTY(BlueprintReadOnly)
 	AMechCharacter* MyMechCharacter;
