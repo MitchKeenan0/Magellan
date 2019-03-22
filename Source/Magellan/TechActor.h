@@ -45,7 +45,7 @@ public:
 	UFUNCTION()
 	FVector GetAimPoint() { return AimPoint; }
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	FName GetTechName() { return TechName; }
 
 protected:
@@ -72,6 +72,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	UParticleSystem* TechParticles;
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UCameraShake> CameraShakeOnActivate;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UTechComponent> TechComponentSubclass;

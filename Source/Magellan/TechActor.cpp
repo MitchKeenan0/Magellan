@@ -75,7 +75,18 @@ void ATechActor::ActivateTech()
 	{
 		if (MyTechComponent->GetCapacity() != 0.0f) /// -1 used by beams
 		{
-			MyTechComponent->ActivateTechComponent();
+			APlayerController* MyController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+			if (MyController != nullptr)
+			{
+				MyTechComponent->ActivateTechComponent();
+				
+				
+				if (CameraShakeOnActivate != nullptr)
+				{
+					MyController->ClientPlayCameraShake(CameraShakeOnActivate, 1.0f, ECameraAnimPlaySpace::CameraLocal, GetActorRotation());
+				}
+			}
+			
 		}
 	}
 }
@@ -84,7 +95,21 @@ void ATechActor::DeactivateTech()
 {
 	if (MyTechComponent != nullptr)
 	{
-		MyTechComponent->DeactivateTechComponent();
+		if (MyTechComponent->GetCapacity() != 0.0f) /// -1 used by beams
+		{
+			APlayerController* MyController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+			if (MyController != nullptr)
+			{
+				MyTechComponent->DeactivateTechComponent();
+
+
+				if (CameraShakeOnActivate != nullptr)
+				{
+					MyController->ClientStopCameraShake(CameraShakeOnActivate, false);
+				}
+			}
+
+		}
 	}
 }
 
