@@ -58,12 +58,16 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	ATechActor* GetEquippedTechActor();
 
+	UFUNCTION(BlueprintCallable)
+	UMechOutfitComponent* GetOutfit() { return Outfit; } /// oh my god Beckyy
+
 	void MoveRight(float Value);
 	void MoveForward(float Value);
 	void StartJump();
 	void EndJump();
 	void StartBrake();
 	void EndBrake();
+	void Dodge();
 	void CentreMech();
 	void EquipSelection(float Value);
 
@@ -120,6 +124,9 @@ protected:
 	float MoveTilt = 10.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float DodgeSpeed = 1000.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float BrakeStrength = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
@@ -163,5 +170,10 @@ private:
 	UPROPERTY()
 	bool bBraking;
 
+	UPROPERTY()
+	float LastMoveForward = 0.0f;
+
+	UPROPERTY()
+	float LastMoveLateral = 0.0f;
 
 };

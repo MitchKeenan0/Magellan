@@ -17,6 +17,11 @@ public:
 	// Sets default values for this component's properties
 	UMechOutfitComponent();
 
+	UFUNCTION(BlueprintCallable)
+	TArray<ATechActor*> GetHardpointTechs() { return HardpointTechs; }
+
+
+
 	UPROPERTY(EditDefaultsOnly)
 	TArray<ATechActor*> ComputerTechs;
 

@@ -54,7 +54,7 @@ void UTechComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 
 void UTechComponent::ActivateTechComponent()
 {
-	
+
 }
 
 void UTechComponent::DeactivateTechComponent()

@@ -68,6 +68,7 @@ void AMechCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("PrimaryFire", IE_Pressed, this, &AMechCharacter::PrimaryFire);
 	PlayerInputComponent->BindAction("PrimaryFire", IE_Released, this, &AMechCharacter::PrimaryStopFire);
 	PlayerInputComponent->BindAction("Centre", IE_Pressed, this, &AMechCharacter::CentreMech);
+	PlayerInputComponent->BindAction("Dodge", IE_Pressed, this, &AMechCharacter::Dodge);
 
 	// Axes
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMechCharacter::MoveRight);
@@ -83,11 +84,17 @@ void AMechCharacter::MoveRight(float Value)
 	// & Turning
 	FRotator NewRotation = GetActorRotation();
 	NewRotation.Yaw += (Value * GetWorld()->DeltaTimeSeconds * TurnSpeed);
-	SetActorRotation(NewRotation);
+	
+	FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), NewRotation, GetWorld()->DeltaTimeSeconds, TurnSpeed);
+	SetActorRotation(InterpRotation);
+
+	LastMoveLateral = Value;
 }
 void AMechCharacter::MoveForward(float Value)
 {
 	AddMovementInput(GetMesh()->GetForwardVector(), Value * MoveSpeed);
+
+	LastMoveForward = Value;
 }
 
 // Jump
@@ -104,6 +111,8 @@ void AMechCharacter::EndJump()
 // Brake
 void AMechCharacter::StartBrake()
 {
+	EndJump();
+	
 	GetCharacterMovement()->MaxWalkSpeed = BrakeStrength;
 	
 	if (GetCharacterMovement()->IsFalling())
@@ -124,6 +133,24 @@ void AMechCharacter::EndBrake()
 	}
 	
 	bBraking = false;
+}
+
+void AMechCharacter::Dodge()
+{
+	// Relative to player
+	FVector ForwardV = GetMesh()->GetForwardVector() * LastMoveForward;
+	FVector LateralV = GetMesh()->GetRightVector() * LastMoveLateral;
+	FVector DodgeVector = (ForwardV + LateralV);
+	
+	/// big jump potential
+	if (LateralV == FVector::ZeroVector)
+	{
+		DodgeVector += (FVector::UpVector * 0.3f);
+	}
+	
+	DodgeVector *= DodgeSpeed;
+	
+	LaunchCharacter(DodgeVector, false, false);
 }
 
 void AMechCharacter::CentreMech()
@@ -262,7 +289,7 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	float b1 = 0.01f;
 	float b2 = 1.0f;
 	float t = b1 + (((s - a1) * (b2 - b1)) / (a2 - a1));
-	float ScaledVelocity = t * 1.68f;
+	float ScaledVelocity = t * (1.0f + t);
 
 	Lean.Pitch *= ScaledVelocity;
 	Lean.Roll *= ScaledVelocity;
