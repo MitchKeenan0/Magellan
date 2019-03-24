@@ -145,7 +145,7 @@ void AMechCharacter::Dodge()
 	/// big jump potential
 	if (LateralV == FVector::ZeroVector)
 	{
-		DodgeVector += (FVector::UpVector * 0.3f);
+		DodgeVector += (FVector::UpVector * 0.75f);
 	}
 	
 	DodgeVector *= DodgeSpeed;
@@ -289,7 +289,7 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	float b1 = 0.01f;
 	float b2 = 1.0f;
 	float t = b1 + (((s - a1) * (b2 - b1)) / (a2 - a1));
-	float ScaledVelocity = t * (1.0f + t);
+	float ScaledVelocity = FMath::Sqrt(t);
 
 	Lean.Pitch *= ScaledVelocity;
 	Lean.Roll *= ScaledVelocity;

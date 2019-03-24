@@ -95,6 +95,12 @@ protected:
 	float ArticulationSpeed = 10.0f;
 
 	UPROPERTY(EditDefaultsOnly)
+	float ArticulationPitch = 20.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+	float ArticulationYaw = 20.0f;
+
+	UPROPERTY(EditDefaultsOnly)
 	float Capacity = 100.0f;
 
 	UPROPERTY(BlueprintReadOnly)
