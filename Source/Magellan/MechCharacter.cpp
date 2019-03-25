@@ -279,10 +279,10 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetInputMouseDelta(X, Y);
 	
 	// Set and clamp Aim
-	FRotator MRotator = FRotator(Y, X, 0.0f);
+	FRotator MRotator = FRotator(Y, X, 0.0f) * CameraSensitivity;
 	AimComponent->AddRelativeRotation(MRotator);
 	FRotator AimRotation = AimComponent->GetRelativeTransform().Rotator();
-	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, TorsoMinPitch, TorsoMaxPitch);
+	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -50.0f, 80.0f);
 	AimComponent->SetRelativeRotation(AimRotation);
 
 	// Interp rotation for torso

@@ -125,16 +125,22 @@ void ATechActor::UpdateArticulation(float DeltaTime)
 		{
 			FRotator MechTorsoRotation = MyMechCharacter->GetTorso()->GetComponentRotation();
 			
-			TargetRotation.Pitch = FMath::Clamp(TargetRotation.Pitch,
-				MechTorsoRotation.Pitch - ArticulationPitch,
-				MechTorsoRotation.Pitch + ArticulationPitch);
-			
-			TargetRotation.Yaw = FMath::Clamp(TargetRotation.Yaw,
-				MechTorsoRotation.Yaw - ArticulationYaw,
-				MechTorsoRotation.Yaw + ArticulationYaw);
-		}
+			float tp = FMath::Abs(GetActorRotation().Pitch);
+			float ty = FMath::Abs(GetActorRotation().Yaw);
 
-		/// problem here -- crossing >180 degrees makes the rotation flip
+			float mp = FMath::Abs(MechTorsoRotation.Pitch) + ArticulationPitch;
+			float my = FMath::Abs(MechTorsoRotation.Yaw) + ArticulationYaw;
+
+			if (tp > mp)
+			{
+				TargetRotation.Pitch = MechTorsoRotation.Pitch;
+			}
+
+			if (ty > my)
+			{
+				TargetRotation.Yaw = MechTorsoRotation.Yaw;
+			}
+		}
 
 		// Interp to
 		FRotator CurrentRotation = GetActorForwardVector().Rotation();

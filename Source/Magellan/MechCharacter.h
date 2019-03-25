@@ -161,6 +161,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float FOV = 100.0f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float CameraSensitivity = 1.0f;
+
 
 	// Tech
 	UPROPERTY(BlueprintReadWrite, Category = "Tech")
