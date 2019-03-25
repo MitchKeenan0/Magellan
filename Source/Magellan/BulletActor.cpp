@@ -8,15 +8,22 @@ ABulletActor::ABulletActor()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
-	SetRootComponent(MeshComp);
-	MeshComp->OnComponentBeginOverlap.AddDynamic(this, &ABulletActor::OnBulletBeginOverlap);
-	MeshComp->OnComponentHit.AddDynamic(this, &ABulletActor::OnBulletHit);
+	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
+	CollisionSphere->SetGenerateOverlapEvents(true);
+	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &ABulletActor::OnBulletBeginOverlap);
+	CollisionSphere->OnComponentHit.AddDynamic(this, &ABulletActor::OnBulletHit);
+	SetRootComponent(CollisionSphere);
 
+	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
+	MeshComp->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	MeshComp->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	
 	ParticleComp = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleComp"));
 	ParticleComp->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	ParticleComp->bAbsoluteScale = true;
 
+	
+	
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
 	ProjectileMovement->InitialSpeed = ProjectileSpeed;
 

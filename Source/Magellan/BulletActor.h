@@ -52,6 +52,9 @@ protected:
 	UParticleSystemComponent* ParticleComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	USphereComponent* CollisionSphere;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UProjectileMovementComponent* ProjectileMovement;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)

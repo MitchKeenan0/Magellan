@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "MechCharacter.h"
+#include "Blueprint/UserWidget.h"
 
 // Sets default values
 AMechCharacter::AMechCharacter()
@@ -41,6 +42,31 @@ void AMechCharacter::BeginPlay()
 	GetCharacterMovement()->MaxWalkSpeed = TopSpeed;
 
 	EquipSelection(-1.0f);
+}
+
+void AMechCharacter::InitMech()
+{
+	APlayerController* MyPlayerCtrl = Cast<APlayerController>(GetController());
+	if (MyPlayerCtrl)
+	{
+		MyHud = CreateWidget<UUserWidget>(MyPlayerCtrl, HudWidgetClass);
+		if (MyHud)
+		{
+			MyHud->AddToViewport();
+			MyHud->SetOwningPlayer(MyPlayerCtrl);
+		}
+	}
+	
+	GetTorso()->SetOwnerNoSee(true);
+	GetMesh()->SetOwnerNoSee(true);
+
+	TrimOutfit();
+	
+	OffsetCamera(FVector::ZeroVector, FRotator::ZeroRotator, FOV);
+
+	GetController()->SetControlRotation(GetActorRotation());
+
+	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("Hello Pilot"));
 }
 
 // Called every frame
@@ -263,6 +289,7 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	FRotator CurrentR = Torso->GetRelativeTransform().Rotator();
 	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
+	
 	Torso->SetRelativeRotation(InterpRotator);
 }
 
@@ -388,6 +415,21 @@ FVector AMechCharacter::GetTorsoPoint()
 	return Result;
 }
 
+
+float AMechCharacter::GetLegsToTorsoAngle()
+{
+	// Collapses the vectors onto the world plane and returns angle in world space
+	FVector LegsForward = ( GetMesh()->GetForwardVector() * FVector(1.0f, 1.0f, 0.0f) ).GetSafeNormal();
+	FVector TorsoForward = ( GetTorso()->GetForwardVector() * FVector(1.0f, 1.0f, 0.0f) ).GetSafeNormal();
+	float Dot = FVector::DotProduct(LegsForward, TorsoForward);
+	float RoughAngle = FMath::RadiansToDegrees(FMath::Acos(Dot));
+	float YawDirection = FMath::Clamp(GetTorso()->RelativeRotation.Yaw, -1.0f, 1.0f);
+	float Result = (RoughAngle * YawDirection) * -1.0f;
+	return Result;
+}
+
+
+
 void AMechCharacter::PrimaryFire()
 {
 	ATechActor* MyPrimaryTech = GetTechActor(EquipSelectValue);
@@ -482,8 +524,8 @@ TArray<ATechActor*> AMechCharacter::GetBuilderTechByTag(FName Tag)
 void AMechCharacter::OffsetCamera(FVector Offset, FRotator Rotation, float FOV)
 {
 	SpringArmComp->SetRelativeLocation(Offset);
+	SpringArmComp->SetRelativeRotation(Rotation);
 	CameraComp->FieldOfView = FOV;
-	SpringArmComp->SetWorldRotation(Rotation);
 }
 
 void AMechCharacter::TrimOutfit()

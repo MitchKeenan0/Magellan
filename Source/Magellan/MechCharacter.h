@@ -46,21 +46,6 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UFUNCTION(BlueprintCallable)
-	bool IsBraking() { return bBraking; }
-
-	UFUNCTION(BlueprintCallable)
-	FName GetEquippedTechName();
-
-	UFUNCTION(BlueprintCallable)
-	ATechActor* GetTechActor(int EquipIndex);
-
-	UFUNCTION(BlueprintCallable)
-	ATechActor* GetEquippedTechActor();
-
-	UFUNCTION(BlueprintCallable)
-	UMechOutfitComponent* GetOutfit() { return Outfit; } /// oh my god Beckyy
-
 	void MoveRight(float Value);
 	void MoveForward(float Value);
 	void StartJump();
@@ -77,6 +62,24 @@ protected:
 	void UpdateLean(float DeltaTime);
 
 	UFUNCTION(BlueprintCallable)
+	bool IsBraking() { return bBraking; }
+
+	UFUNCTION(BlueprintCallable)
+	FName GetEquippedTechName();
+
+	UFUNCTION(BlueprintCallable)
+	ATechActor* GetTechActor(int EquipIndex);
+
+	UFUNCTION(BlueprintCallable)
+	ATechActor* GetEquippedTechActor();
+
+	UFUNCTION(BlueprintCallable)
+	UMechOutfitComponent* GetOutfit() { return Outfit; } /// oh my god Beckyy
+
+	UFUNCTION(BlueprintCallable)
+	float GetLegsToTorsoAngle();
+	
+	UFUNCTION(BlueprintCallable)
 	void InitOptions();
 
 	UFUNCTION(BlueprintCallable)
@@ -90,6 +93,10 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	void OffsetCamera(FVector Offset, FRotator Rotation, float FOV);
+
+	UFUNCTION(BlueprintCallable)
+	void InitMech();
+
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	USceneComponent* AimComponent;
@@ -105,6 +112,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComp;
+
+	// Reference UMG Asset in the Editor
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<class UUserWidget> HudWidgetClass;
+
+	// Variable to hold the widget After Creating it.
+	UUserWidget* MyHud;
 
 
 
@@ -143,6 +157,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float TorsoMaxPitch = 80.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float FOV = 100.0f;
 
 
 	// Tech
