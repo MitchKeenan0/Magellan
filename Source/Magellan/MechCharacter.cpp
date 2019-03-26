@@ -61,12 +61,8 @@ void AMechCharacter::InitMech()
 	GetMesh()->SetOwnerNoSee(true);
 
 	TrimOutfit();
-	
 	OffsetCamera(FVector::ZeroVector, FRotator::ZeroRotator, FOV);
-
 	GetController()->SetControlRotation(GetActorRotation());
-
-	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("Hello Pilot"));
 }
 
 // Called every frame
@@ -99,6 +95,7 @@ void AMechCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	// Axes
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMechCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMechCharacter::MoveForward);
+	PlayerInputComponent->BindAxis("MoveTurn", this, &AMechCharacter::MoveTurn);
 	PlayerInputComponent->BindAxis("EquipSelect", this, &AMechCharacter::EquipSelection);
 }
 
@@ -107,13 +104,7 @@ void AMechCharacter::MoveRight(float Value)
 {
 	AddMovementInput(GetMesh()->GetRightVector(), Value * MoveSpeed * LateralMoveScalar);
 
-	// & Turning
-	FRotator NewRotation = GetActorRotation();
-	NewRotation.Yaw += (Value * GetWorld()->DeltaTimeSeconds * TurnSpeed);
-	
-	FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), NewRotation, GetWorld()->DeltaTimeSeconds, TurnSpeed);
-	SetActorRotation(InterpRotation);
-
+	/// for dodge direction
 	LastMoveLateral = Value;
 }
 void AMechCharacter::MoveForward(float Value)
@@ -121,6 +112,16 @@ void AMechCharacter::MoveForward(float Value)
 	AddMovementInput(GetMesh()->GetForwardVector(), Value * MoveSpeed);
 
 	LastMoveForward = Value;
+}
+void AMechCharacter::MoveTurn(float Value)
+{
+	AddMovementInput(GetMesh()->GetRightVector(), Value * MoveSpeed * LateralMoveScalar * 0.1f);
+	
+	FRotator NewRotation = GetActorRotation();
+	NewRotation.Yaw += (Value * GetWorld()->DeltaTimeSeconds * TurnSpeed);
+
+	FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), NewRotation, GetWorld()->DeltaTimeSeconds, TurnSpeed);
+	SetActorRotation(InterpRotation);
 }
 
 // Jump
@@ -307,7 +308,7 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	// Initial rotation
 	Lean.Pitch = DotToVelocityForward * -MoveTilt;
 	Lean.Yaw = GetActorRotation().Yaw;
-	Lean.Roll = DotToVelocityRight * -MoveTilt * 2.0f;
+	Lean.Roll = DotToVelocityRight * MoveTilt * 2.0f;
 
 	// Velocity mapped 0.0 -- 1.0
 	float a1 = 1.0f;
@@ -325,7 +326,7 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	if (bBraking && (GetCharacterMovement()->Velocity.Size() > 5.0f))
 	{
 		Lean.Pitch *= -1.0f;
-		Lean.Roll *= 1.618f;
+		Lean.Roll *= -1.618f;
 	}
 
 	FRotator TargetRotation = Lean;

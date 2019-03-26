@@ -8,11 +8,11 @@ ABulletActor::ABulletActor()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionSphere"));
-	CollisionSphere->SetGenerateOverlapEvents(true);
-	CollisionSphere->OnComponentBeginOverlap.AddDynamic(this, &ABulletActor::OnBulletBeginOverlap);
-	CollisionSphere->OnComponentHit.AddDynamic(this, &ABulletActor::OnBulletHit);
-	SetRootComponent(CollisionSphere);
+	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
+	CollisionBox->SetGenerateOverlapEvents(true);
+	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABulletActor::OnBulletBeginOverlap);
+	CollisionBox->OnComponentHit.AddDynamic(this, &ABulletActor::OnBulletHit);
+	SetRootComponent(CollisionBox);
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
@@ -22,10 +22,8 @@ ABulletActor::ABulletActor()
 	ParticleComp->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 	ParticleComp->bAbsoluteScale = true;
 
-	
-	
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-	ProjectileMovement->InitialSpeed = ProjectileSpeed;
+	//ProjectileMovement->InitialSpeed = ProjectileSpeed;
 
 	RotatingMovement = CreateDefaultSubobject<URotatingMovementComponent>(TEXT("RotatingMovement"));
 
@@ -41,6 +39,8 @@ void ABulletActor::BeginPlay()
 	float RScalar = FMath::FRandRange(-1.0f, 1.0f) * RotationSpeed;
 	FRotator Rando = FMath::VRand().Rotation() * RScalar;
 	RotatingMovement->RotationRate = Rando;
+
+	ProjectileMovement->Velocity = GetActorForwardVector() * ProjectileSpeed;
 }
 
 // Called every frame
@@ -100,7 +100,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 
 void ABulletActor::OnBulletBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (bOverlap && !bHit)
+	if (!bHit) ///bOverlap && 
 	{
 		Collide(OtherActor);
 	}
@@ -108,7 +108,7 @@ void ABulletActor::OnBulletBeginOverlap(UPrimitiveComponent* OverlappedComponent
 
 void ABulletActor::OnBulletHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (!bOverlap && !bHit)
+	if (!bHit) ///!bOverlap && 
 	{
 		Collide(OtherActor);
 	}

@@ -48,6 +48,7 @@ protected:
 
 	void MoveRight(float Value);
 	void MoveForward(float Value);
+	void MoveTurn(float Value);
 	void StartJump();
 	void EndJump();
 	void StartBrake();
