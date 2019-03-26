@@ -11,7 +11,7 @@ class ABulletActor;
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable, BlueprintType)
 class MAGELLAN_API UGunTechComponent : public UTechComponent
 {
 	GENERATED_BODY()

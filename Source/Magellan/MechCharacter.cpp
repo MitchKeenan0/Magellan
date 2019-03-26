@@ -122,6 +122,12 @@ void AMechCharacter::MoveTurn(float Value)
 
 	FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), NewRotation, GetWorld()->DeltaTimeSeconds, TurnSpeed);
 	SetActorRotation(InterpRotation);
+
+	if (LastMoveLateral == 0.0f)
+	{
+		/// also for lean
+		LastMoveLateral = Value;
+	}
 }
 
 // Jump
@@ -308,7 +314,7 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	// Initial rotation
 	Lean.Pitch = DotToVelocityForward * -MoveTilt;
 	Lean.Yaw = GetActorRotation().Yaw;
-	Lean.Roll = DotToVelocityRight * MoveTilt * 2.0f;
+	Lean.Roll = LastMoveLateral * MoveTilt;
 
 	// Velocity mapped 0.0 -- 1.0
 	float a1 = 1.0f;

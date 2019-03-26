@@ -12,7 +12,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable, BlueprintType)
 class MAGELLAN_API UBeamTechComponent : public UTechComponent
 {
 	GENERATED_BODY()
