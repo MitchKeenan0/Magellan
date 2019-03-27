@@ -127,7 +127,7 @@ void AMechCharacter::MoveForward(float Value)
 }
 void AMechCharacter::MoveTurn(float Value)
 {
-	AddMovementInput(GetMesh()->GetRightVector(), Value * MoveSpeed * LateralMoveScalar * 0.1f);
+	AddMovementInput(GetMesh()->GetRightVector(), Value * MoveSpeed * LateralMoveScalar * 0.01f);
 	
 	FRotator NewRotation = GetActorRotation();
 	NewRotation.Yaw += (Value * GetWorld()->DeltaTimeSeconds * TurnSpeed);
@@ -171,7 +171,7 @@ void AMechCharacter::StartBrake()
 		OnBrakeDelegate.Broadcast(true);
 	}
 
-	EndJump();
+	//EndJump();
 	
 	GetCharacterMovement()->MaxWalkSpeed = BrakeStrength;
 	
@@ -369,7 +369,8 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	if (bBraking && (GetCharacterMovement()->Velocity.Size() > 5.0f))
 	{
 		Lean.Pitch *= -1.0f;
-		Lean.Roll *= -1.618f;
+		//Lean.Roll *= -1.618f;
+		Lean.Roll = DotToVelocityRight * MoveTilt * ScaledVelocity * -1.618f;
 	}
 
 	FRotator TargetRotation = Lean;
