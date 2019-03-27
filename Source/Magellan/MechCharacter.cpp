@@ -32,6 +32,15 @@ AMechCharacter::AMechCharacter()
 	CameraComp->FieldOfView = 100.0f;
 
 	JumpMaxHoldTime = MaxJumpTime;
+
+	//OnBrakeDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
+	//OnDodgeDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
+	//OnLiftDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
+}
+
+void AMechCharacter::TestFunction(bool bOn)
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Delegate Received"));
 }
 
 // Called when the game starts or when spawned
@@ -63,6 +72,9 @@ void AMechCharacter::InitMech()
 	TrimOutfit();
 	OffsetCamera(FVector::ZeroVector, FRotator::ZeroRotator, FOV);
 	GetController()->SetControlRotation(GetActorRotation());
+
+	FOutputDraw IdleDraw;
+	OutputDraws.Init(IdleDraw, 1);
 }
 
 // Called every frame
@@ -133,17 +145,32 @@ void AMechCharacter::MoveTurn(float Value)
 // Jump
 void AMechCharacter::StartJump()
 {
+	if (OnLiftDelegate.IsBound())
+	{
+		OnLiftDelegate.Broadcast(true);
+	}
+
 	EndBrake();
 	Jump();
 }
 void AMechCharacter::EndJump()
 {
+	if (OnLiftDelegate.IsBound())
+	{
+		OnLiftDelegate.Broadcast(false);
+	}
+
 	StopJumping();
 }
 
 // Brake
 void AMechCharacter::StartBrake()
 {
+	if (OnBrakeDelegate.IsBound())
+	{
+		OnBrakeDelegate.Broadcast(true);
+	}
+
 	EndJump();
 	
 	GetCharacterMovement()->MaxWalkSpeed = BrakeStrength;
@@ -158,6 +185,11 @@ void AMechCharacter::StartBrake()
 
 void AMechCharacter::EndBrake()
 {
+	if (OnBrakeDelegate.IsBound())
+	{
+		OnBrakeDelegate.Broadcast(false);
+	}
+
 	GetCharacterMovement()->MaxWalkSpeed = TopSpeed;
 	
 	if (GetCharacterMovement()->IsFalling())
@@ -170,6 +202,11 @@ void AMechCharacter::EndBrake()
 
 void AMechCharacter::Dodge()
 {
+	if (OnDodgeDelegate.IsBound())
+	{
+		OnDodgeDelegate.Broadcast(true);
+	}
+
 	// Relative to player
 	FVector ForwardV = GetMesh()->GetForwardVector() * LastMoveForward;
 	FVector LateralV = GetMesh()->GetRightVector() * LastMoveLateral;

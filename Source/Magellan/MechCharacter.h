@@ -6,8 +6,57 @@
 #include "GameFramework/Character.h"
 #include "TechActor.h"
 #include "MechOutfitComponent.h"
-//#include "PaperSpriteComponent.h"
+///#include "PaperSpriteComponent.h"
 #include "MechCharacter.generated.h"
+
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBrakeDelegate, bool, bOn);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDodgeDelegate, bool, bOn);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLiftDelegate, bool, bOn);
+///DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FTestDelegate, bool, bOn);
+///DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FTestDelegate, float, Damage);
+
+
+USTRUCT()
+struct FOutputDraw
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	float DrawSize;
+
+	UPROPERTY()
+	float DrawHeat;
+
+	void InitDraw(const float Size, const float Heat)
+	{
+		DrawSize = Size;
+		DrawHeat = Heat;
+	}
+
+	void SetDraw(const float Value)
+	{
+		DrawSize = Value;
+	}
+	void SetHeat(const float Value)
+	{
+		DrawHeat = Value;
+	}
+
+	//Constructor
+	FOutputDraw()
+	{
+		DrawSize = 1.0f;
+		DrawHeat = 0.0f;
+	}
+
+	//For GC
+	void Destroy()
+	{
+
+	}
+};
+
 
 UCLASS()
 class MAGELLAN_API AMechCharacter : public ACharacter
@@ -39,6 +88,20 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	USkeletalMeshComponent* GetTorso() {return Torso;}
+
+
+	UFUNCTION()
+	void TestFunction(bool bOn);
+
+	/*UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
+	FTestDelegate OnTestDelegate;*/
+
+	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
+	FBrakeDelegate OnBrakeDelegate;
+	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
+	FDodgeDelegate OnDodgeDelegate;
+	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
+	FLiftDelegate OnLiftDelegate;
 
 	
 
@@ -119,6 +182,7 @@ protected:
 	TSubclassOf<class UUserWidget> HudWidgetClass;
 
 	// Variable to hold the widget After Creating it.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UUserWidget* MyHud;
 
 
@@ -196,5 +260,8 @@ private:
 
 	UPROPERTY()
 	float LastMoveLateral = 0.0f;
+
+	UPROPERTY()
+	TArray<FOutputDraw> OutputDraws;
 
 };
