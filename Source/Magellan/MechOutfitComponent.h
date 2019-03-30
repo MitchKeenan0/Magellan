@@ -18,7 +18,7 @@ public:
 	UMechOutfitComponent();
 
 	UFUNCTION(BlueprintCallable)
-	TArray<ATechActor*> GetHardpointTechs() { return HardpointTechs; }
+	TArray<ATechActor*> GetHardpointTechs() { return HardpointTechs; }			/// CRASH HERE- somewhere at begin play HardpointTechs is null
 
 
 

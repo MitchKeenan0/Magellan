@@ -86,6 +86,8 @@ void AMechCharacter::Tick(float DeltaTime)
 	{
 		UpdateLean(DeltaTime);
 		UpdateTorso(DeltaTime);
+
+		UpdateTelemetry(DeltaTime);
 	}
 }
 
@@ -127,7 +129,7 @@ void AMechCharacter::MoveForward(float Value)
 }
 void AMechCharacter::MoveTurn(float Value)
 {
-	AddMovementInput(GetMesh()->GetRightVector(), Value * MoveSpeed * LateralMoveScalar * 0.01f);
+	AddMovementInput(GetMesh()->GetRightVector(), Value * MoveSpeed * LateralMoveScalar * 0.0001f);
 	
 	FRotator NewRotation = GetActorRotation();
 	NewRotation.Yaw += (Value * GetWorld()->DeltaTimeSeconds * TurnSpeed);
@@ -376,6 +378,37 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	FRotator TargetRotation = Lean;
 	FRotator InterpLean = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, TorsoSpeed);
 	SetActorRotation(InterpLean);
+}
+
+void AMechCharacter::UpdateTelemetry(float DeltaTime)
+{
+	if (TelemetryTimer >= (1.0f / TelemetryUpdateRate))
+	{
+		TelemetryTimer = 0.0f;
+
+		if (OnTelemetryDelegate.IsBound())
+		{
+			bool bAirborne = GetCharacterMovement()->IsFalling();
+			float Velocity = GetCharacterMovement()->Velocity.Size() * 0.04f;
+			float Altitude = GetAltitude();
+			OnTelemetryDelegate.Broadcast(bAirborne, Velocity, Altitude);
+		}
+	}
+	else
+	{
+		TelemetryTimer += DeltaTime;
+	}
+}
+
+float AMechCharacter::GetAltitude()
+{
+	FVector Location = GetActorLocation();
+	FFindFloorResult FloorResult;
+	GetCharacterMovement()->FindFloor(Location, FloorResult, true);
+	FVector ToFloor = GetActorLocation() - FloorResult.HitResult.ImpactPoint;
+	
+	float Result = FMath::Sqrt(ToFloor.Z) * 0.5f; /// Arbitrary world-to-scale multiplier
+	return Result;
 }
 
 FVector AMechCharacter::GetLookVector()

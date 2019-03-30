@@ -13,7 +13,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBrakeDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDodgeDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLiftDelegate, bool, bOn);
-///DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FTestDelegate, bool, bOn);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FTelemetryDelegate, bool, bAirborne, float, Velocity, float, Altitude);
 ///DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FTestDelegate, float, Damage);
 
 
@@ -102,6 +102,8 @@ public:
 	FDodgeDelegate OnDodgeDelegate;
 	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
 	FLiftDelegate OnLiftDelegate;
+	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
+	FTelemetryDelegate OnTelemetryDelegate;
 
 	
 
@@ -124,6 +126,12 @@ protected:
 	void PrimaryStopFire();
 
 	void UpdateLean(float DeltaTime);
+	
+	UFUNCTION()
+	void UpdateTelemetry(float DeltaTime);
+
+	UFUNCTION()
+	float GetAltitude();
 
 	UFUNCTION(BlueprintCallable)
 	bool IsBraking() { return bBraking; }
@@ -229,6 +237,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float CameraSensitivity = 1.0f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float TelemetryUpdateRate = 30.0f;
+
 
 	// Tech
 	UPROPERTY(BlueprintReadWrite, Category = "Tech")
@@ -260,6 +271,9 @@ private:
 
 	UPROPERTY()
 	float LastMoveLateral = 0.0f;
+
+	UPROPERTY()
+	float TelemetryTimer = 0.0f;
 
 	UPROPERTY()
 	TArray<FOutputDraw> OutputDraws;
