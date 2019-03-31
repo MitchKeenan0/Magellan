@@ -86,8 +86,15 @@ void AMechCharacter::Tick(float DeltaTime)
 	{
 		UpdateLean(DeltaTime);
 		UpdateTorso(DeltaTime);
-
-		UpdateTelemetry(DeltaTime);
+		
+		if (!bCPU)
+		{
+			UpdateTelemetry(DeltaTime);
+		}
+		else
+		{
+			UpdateBot(DeltaTime);
+		}
 	}
 }
 
@@ -322,7 +329,16 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	// Get Mouse inputs
 	float X;
 	float Y;
-	UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetInputMouseDelta(X, Y);
+
+	if (bCPU)
+	{
+		X = BotMouseX;
+		Y = BotMouseY;
+	}
+	else
+	{
+		UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetInputMouseDelta(X, Y);
+	}
 	
 	// Set and clamp Aim
 	FRotator MRotator = FRotator(Y, X, 0.0f) * CameraSensitivity;
@@ -493,7 +509,6 @@ FVector AMechCharacter::GetTorsoPoint()
 	return Result;
 }
 
-
 float AMechCharacter::GetLegsToTorsoAngle()
 {
 	// Collapses the vectors onto the world plane and returns angle in world space
@@ -505,8 +520,6 @@ float AMechCharacter::GetLegsToTorsoAngle()
 	float Result = (RoughAngle * YawDirection) * -1.0f;
 	return Result;
 }
-
-
 
 void AMechCharacter::PrimaryFire()
 {
@@ -633,6 +646,25 @@ void AMechCharacter::RemovePart(int TechID, int HardpointIndex)
 			Outfit->HardpointTechs[HardpointIndex]->Destroy();
 			Outfit->HardpointTechs.RemoveAt(HardpointIndex);
 		}
+	}
+}
+
+void AMechCharacter::UpdateBot(float DeltaTime)
+{
+	if (!TargetMech)
+	{
+		TargetMech = Cast<AMechCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+	}
+	else
+	{
+		FVector MyAim = AimComponent->GetRightVector().GetSafeNormal();
+		FVector ToPlayer = (TargetMech->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		float DotToPlayer = FVector::DotProduct(MyAim, ToPlayer);
+		float LateralInput = FMath::Clamp(DotToPlayer * 100.0f, -50.0f, 50.0f);
+		
+		float Ease = FMath::Abs(DotToPlayer);
+		BotMouseX = FMath::FInterpTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * DotToPlayer);
+		BotMouseY = 0.0f;
 	}
 }
 

@@ -78,6 +78,12 @@ public:
 	AMechCharacter();
 
 	UFUNCTION(BlueprintCallable)
+	void InitOptions();
+
+	UFUNCTION(BlueprintCallable)
+	void BuildTech(int TechID, int TechHardpoint);
+
+	UFUNCTION(BlueprintCallable)
 	FVector GetLookVector();
 
 	UFUNCTION(BlueprintCallable)
@@ -87,7 +93,10 @@ public:
 	FVector GetTorsoPoint();
 
 	UFUNCTION(BlueprintCallable)
-	USkeletalMeshComponent* GetTorso() {return Torso;}
+	USkeletalMeshComponent* GetTorso() { return Torso; }
+
+	UFUNCTION()
+	void SetIsBot(bool Value) { bCPU = Value; }
 
 
 	UFUNCTION()
@@ -110,6 +119,9 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UFUNCTION(BlueprintCallable)
+	void UpdateBot(float DeltaTime);
 
 	void MoveRight(float Value);
 	void MoveForward(float Value);
@@ -150,12 +162,6 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	float GetLegsToTorsoAngle();
-	
-	UFUNCTION(BlueprintCallable)
-	void InitOptions();
-
-	UFUNCTION(BlueprintCallable)
-	void BuildTech(int TechID, int TechHardpoint);
 
 	UFUNCTION(BlueprintCallable)
 	void TrimOutfit();
@@ -264,6 +270,9 @@ public:
 
 private:
 	UPROPERTY()
+	bool bCPU = false;
+
+	UPROPERTY()
 	bool bBraking;
 
 	UPROPERTY()
@@ -274,6 +283,15 @@ private:
 
 	UPROPERTY()
 	float TelemetryTimer = 0.0f;
+
+	UPROPERTY()
+	float BotMouseX = 0.0f;
+
+	UPROPERTY()
+	float BotMouseY = 0.0f;
+
+	UPROPERTY()
+	AMechCharacter* TargetMech = nullptr;
 
 	UPROPERTY()
 	TArray<FOutputDraw> OutputDraws;
