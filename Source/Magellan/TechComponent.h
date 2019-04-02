@@ -40,6 +40,12 @@ public:
 	TSubclassOf<AActor> AmmoType;
 
 	UPROPERTY(EditDefaultsOnly)
+	bool bAutomatic = true;
+
+	UPROPERTY(EditDefaultsOnly)
+	float RateOfFire = 5.0f;
+
+	UPROPERTY(EditDefaultsOnly)
 	USceneComponent* EmitPoint;
 
 	
@@ -47,6 +53,14 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	FTimerHandle AutoFireTimer;
+
+	UFUNCTION()
+	void ShakeCamera();
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UCameraShake> CameraShakeOnActivate;
 
 	UPROPERTY(BlueprintReadOnly)
 	AMechCharacter* MyMechCharacter;

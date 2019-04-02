@@ -18,9 +18,10 @@ class MAGELLAN_API UGunTechComponent : public UTechComponent
 	
 public:
 	virtual void ActivateTechComponent() override;
+	virtual void DeactivateTechComponent() override;
 
 protected:
 	UFUNCTION()
-	void Fire(TSubclassOf<AActor> Ammo);
+	void Fire();
 
 };

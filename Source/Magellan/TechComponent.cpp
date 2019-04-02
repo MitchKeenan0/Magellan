@@ -62,3 +62,15 @@ void UTechComponent::DeactivateTechComponent()
 
 }
 
+void UTechComponent::ShakeCamera()
+{
+	APlayerController* MyController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if ((MyController != nullptr) && (MyMechCharacter != nullptr))
+	{
+		if (CameraShakeOnActivate != nullptr)
+		{
+			MyController->ClientPlayCameraShake(CameraShakeOnActivate, 1.0f, ECameraAnimPlaySpace::CameraLocal, MyMechCharacter->GetActorRotation());
+		}
+	}
+}
+
