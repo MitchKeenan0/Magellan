@@ -53,6 +53,38 @@ void AMechCharacter::BeginPlay()
 	EquipSelection(-1.0f);
 }
 
+void AMechCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+}
+
+void AMechCharacter::DestructMech()
+{
+	if (GetController() != nullptr)
+	{
+		GetController()->UnPossess();
+	}
+	
+	if (Outfit != nullptr)
+	{
+		Outfit->ClearOutfit();
+	}
+
+	Torso->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	Torso->SetSimulatePhysics(true);
+	Torso->WakeRigidBody();
+
+	FVector PopLocation = GetActorLocation() + (FMath::VRand() * 20.0f);
+	Torso->AddRadialForce(PopLocation, 1500.0f, 11555000.0f, ERadialImpulseFalloff::RIF_Linear, false);
+
+	if (bCPU)
+	{
+		SetActorEnableCollision(false);
+		SetLifeSpan(3.0f);
+	}
+}
+
 void AMechCharacter::InitMech()
 {
 	APlayerController* MyPlayerCtrl = Cast<APlayerController>(GetController());
@@ -183,6 +215,7 @@ void AMechCharacter::StartBrake()
 	//EndJump();
 	
 	GetCharacterMovement()->MaxWalkSpeed = BrakeStrength;
+	GetCharacterMovement()->GroundFriction = 10.0f;
 	
 	if (GetCharacterMovement()->IsFalling())
 	{
@@ -200,6 +233,7 @@ void AMechCharacter::EndBrake()
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = TopSpeed;
+	GetCharacterMovement()->GroundFriction = 2.0f;
 	
 	if (GetCharacterMovement()->IsFalling())
 	{
@@ -224,7 +258,13 @@ void AMechCharacter::Dodge()
 	/// big jump potential
 	if (LateralV == FVector::ZeroVector)
 	{
-		DodgeVector += (FVector::UpVector * 0.75f);
+		DodgeVector += (FVector::UpVector * 0.1f);
+
+		/// leap!
+		if (ForwardV == FVector::ZeroVector)
+		{
+			DodgeVector.Z *= 7.5f;
+		}
 	}
 	
 	DodgeVector *= DodgeSpeed;
@@ -349,7 +389,7 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 
 	// Interp rotation for torso
 	FRotator CurrentR = Torso->GetRelativeTransform().Rotator();
-	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
+	FRotator InterpRotator = FMath::RInterpConstantTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
 	
 	Torso->SetRelativeRotation(InterpRotator);
@@ -418,12 +458,38 @@ void AMechCharacter::UpdateTelemetry(float DeltaTime)
 
 float AMechCharacter::GetAltitude()
 {
-	FVector Location = GetActorLocation();
-	FFindFloorResult FloorResult;
-	GetCharacterMovement()->FindFloor(Location, FloorResult, true);
-	FVector ToFloor = GetActorLocation() - FloorResult.HitResult.ImpactPoint;
-	
-	float Result = FMath::Sqrt(ToFloor.Z) * 0.5f; /// Arbitrary world-to-scale multiplier
+	float Result = 0.0f;
+
+	bool HitResult = false;
+	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjects;
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+	FHitResult Hit;
+	TArray<AActor*> IgnoredActors;
+	IgnoredActors.Add(this->GetOwner());
+
+	FVector RaycastVector = (FVector::UpVector * -99000.0f);
+	FVector Start = GetActorLocation();
+	FVector End = Start + RaycastVector;
+
+	// Raycast down
+	HitResult = UKismetSystemLibrary::LineTraceSingleForObjects(
+		this,
+		Start,
+		End,
+		TraceObjects,
+		false,
+		IgnoredActors,
+		EDrawDebugTrace::None,
+		Hit,
+		true,
+		FLinearColor::White, FLinearColor::Red, 0.5f);
+
+	if (HitResult)
+	{
+		Result = FVector::Dist(GetActorLocation(), Hit.ImpactPoint);
+		Result *= 0.02f;
+	}
+
 	return Result;
 }
 
@@ -646,6 +712,14 @@ void AMechCharacter::RemovePart(int TechID, int HardpointIndex)
 			Outfit->HardpointTechs[HardpointIndex]->Destroy();
 			Outfit->HardpointTechs.RemoveAt(HardpointIndex);
 		}
+	}
+}
+
+void AMechCharacter::ConfirmHit()
+{
+	if (OnHitDelegate.IsBound())
+	{
+		OnHitDelegate.Broadcast();
 	}
 }
 

@@ -10,7 +10,7 @@ ATechActor::ATechActor()
 	PrimaryActorTick.bCanEverTick = true;
 
 	TechRoot = CreateDefaultSubobject<USceneComponent>(TEXT("TechRoot"));
-	RootComponent = TechRoot;
+	SetRootComponent(TechRoot);
 
 	TechMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TechMesh"));
 	TechMesh->SetupAttachment(RootComponent);
@@ -26,7 +26,7 @@ ATechActor::ATechActor()
 void ATechActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 }
 
 void ATechActor::InitTechActor(AMechCharacter* TechOwner)
@@ -51,6 +51,9 @@ void ATechActor::InitTechActor(AMechCharacter* TechOwner)
 				{
 					MyTechComponent->AmmoType = AmmoType;
 				}
+
+				// Set timer for aim point update
+				GetWorld()->GetTimerManager().SetTimer(AimPointTimer, this, &ATechActor::UpdateAimPoint, 0.03f, true);
 			}
 		}
 	}
@@ -61,12 +64,15 @@ void ATechActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bArticulated)
+	if (MyMechCharacter != nullptr)
 	{
-		UpdateArticulation(DeltaTime);
-	}
+		if (bArticulated)
+		{
+			UpdateArticulation(DeltaTime);
+		}
 
-	UpdateAimPoint();
+		//UpdateAimPoint();
+	}
 }
 
 void ATechActor::ActivateTech()
@@ -144,7 +150,16 @@ void ATechActor::UpdateArticulation(float DeltaTime)
 
 		// Interp to
 		FRotator CurrentRotation = GetActorForwardVector().Rotation();
-		FRotator InterpRotator = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, ArticulationSpeed);
+		FRotator InterpRotator;
+		if (bSmoothArticulation)
+		{
+			InterpRotator = FMath::RInterpTo(CurrentRotation, TargetRotation, DeltaTime, ArticulationSpeed);
+		}
+		else
+		{
+			InterpRotator = FMath::RInterpConstantTo(CurrentRotation, TargetRotation, DeltaTime, ArticulationSpeed);
+		}
+
 		SetActorRotation(InterpRotator);
 	}
 }
@@ -188,7 +203,8 @@ void ATechActor::UpdateAimPoint()
 	}
 	else
 	{
-		AimPoint = GetActorLocation() + (GetActorForwardVector() * 20000.0f);
+		FVector LocalOffset = MyMechCharacter->GetActorLocation();
+		AimPoint = LocalOffset + (GetActorForwardVector() * 20000.0f);
 	}
 }
 

@@ -27,8 +27,12 @@ void AMechAIController::InitMechBot(AMechCharacter* Mech)
 	{
 		MyMechCharacter->SetIsBot(true);
 		
+		// Set up tech
 		MyMechCharacter->InitOptions();
-		MyMechCharacter->BuildTech(0, 0);
-		MyMechCharacter->BuildTech(1, 1);
+		
+		//MyMechCharacter->BuildTech(0, 0);
+		//MyMechCharacter->BuildTech(1, 1);
+
+		MyMechCharacter->TrimOutfit();
 	}
 }

@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "Magellan.h"
 #include "Components/ActorComponent.h"
 #include "TechActor.h"
 #include "MechOutfitComponent.generated.h"
@@ -20,7 +20,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	TArray<ATechActor*> GetHardpointTechs() { return HardpointTechs; }			/// CRASH HERE- somewhere at begin play HardpointTechs is null
 
-
+	UFUNCTION()
+	void ClearOutfit();
 
 	UPROPERTY(EditDefaultsOnly)
 	TArray<ATechActor*> ComputerTechs;

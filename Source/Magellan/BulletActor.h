@@ -84,6 +84,9 @@ protected:
 
 private:	
 	UPROPERTY()
+	bool bLit = false;
+
+	UPROPERTY()
 	bool bHit = false;
 
 };

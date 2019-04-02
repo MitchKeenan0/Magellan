@@ -52,6 +52,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	FTimerHandle AimPointTimer;
+
 	UPROPERTY()
 	FVector AimPoint;
 
@@ -93,6 +95,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	float ArticulationSpeed = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+	bool bSmoothArticulation = true;
 
 	UPROPERTY(EditDefaultsOnly)
 	float ArticulationPitch = 20.0f;

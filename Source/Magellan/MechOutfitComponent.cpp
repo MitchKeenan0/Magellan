@@ -31,3 +31,22 @@ void UMechOutfitComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	// ...
 }
 
+
+void UMechOutfitComponent::ClearOutfit()
+{
+	int TechNum = HardpointTechs.Num();
+	if (TechNum > 0)
+	{
+		for (ATechActor* Tech : HardpointTechs)
+		{
+			if (Tech != nullptr)
+			{
+				Tech->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+				Tech->SetLifeSpan(1.0f);
+			}
+		}
+
+		HardpointTechs.Empty();
+	}
+}
+

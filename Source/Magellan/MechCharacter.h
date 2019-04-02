@@ -9,7 +9,7 @@
 ///#include "PaperSpriteComponent.h"
 #include "MechCharacter.generated.h"
 
-
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FHitDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBrakeDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDodgeDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLiftDelegate, bool, bOn);
@@ -84,6 +84,18 @@ public:
 	void BuildTech(int TechID, int TechHardpoint);
 
 	UFUNCTION(BlueprintCallable)
+	void TrimOutfit();
+
+
+
+	UFUNCTION()
+	void ConfirmHit();
+
+	UFUNCTION()
+	void DestructMech();
+
+
+	UFUNCTION(BlueprintCallable)
 	FVector GetLookVector();
 
 	UFUNCTION(BlueprintCallable)
@@ -97,6 +109,9 @@ public:
 
 	UFUNCTION()
 	void SetIsBot(bool Value) { bCPU = Value; }
+
+	UFUNCTION(BlueprintCallable)
+	bool IsBot() { return bCPU; }
 
 
 	UFUNCTION()
@@ -113,12 +128,16 @@ public:
 	FLiftDelegate OnLiftDelegate;
 	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
 	FTelemetryDelegate OnTelemetryDelegate;
+	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
+	FHitDelegate OnHitDelegate;
 
 	
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	UFUNCTION(BlueprintCallable)
 	void UpdateBot(float DeltaTime);
@@ -162,9 +181,6 @@ protected:
 
 	UFUNCTION(BlueprintCallable)
 	float GetLegsToTorsoAngle();
-
-	UFUNCTION(BlueprintCallable)
-	void TrimOutfit();
 
 	UFUNCTION(BlueprintCallable)
 	void RemovePart(int TechID, int HardpointIndex);

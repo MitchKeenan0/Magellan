@@ -35,12 +35,6 @@ void ABulletActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// Init Rotation
-	float RScalar = FMath::FRandRange(-1.0f, 1.0f) * RotationSpeed;
-	FRotator Rando = FMath::VRand().Rotation() * RScalar;
-	RotatingMovement->RotationRate = Rando;
-
-	ProjectileMovement->Velocity = GetActorForwardVector() * ProjectileSpeed;
 }
 
 // Called every frame
@@ -48,6 +42,18 @@ void ABulletActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// Init velocity & rotation after muzzleflash
+	if (!bLit && (GetGameTimeSinceCreation() > 0.05f))
+	{
+		ProjectileMovement->Velocity = GetActorForwardVector() * ProjectileSpeed;
+
+		
+		float RScalar = FMath::FRandRange(-1.0f, 1.0f) * RotationSpeed;
+		FRotator Rando = FMath::VRand().Rotation() * RScalar;
+		RotatingMovement->RotationRate = Rando;
+
+		bLit = true;
+	}
 }
 
 
@@ -81,16 +87,22 @@ void ABulletActor::Collide(AActor* OtherActor)
 			bHit = true;
 
 			// Hacky temp explosion
-			MeshComp->SetRelativeScale3D(FVector::OneVector * 5.0f);
+			MeshComp->SetRelativeScale3D(FVector::OneVector * 3.0f);
 			ProjectileMovement->SetVelocityInLocalSpace(FVector::ZeroVector);
 			ProjectileMovement->ProjectileGravityScale = 0.77f;
 			SetLifeSpan(0.5f);
 
 			if (OtherActor != nullptr)
 			{
-				if (OtherActor->ActorHasTag("Mech"))
+				AMechCharacter* HitMech = Cast<AMechCharacter>(OtherActor);
+				if (HitMech != nullptr)
 				{
-					GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::White, TEXT("Hit"));
+					MyMechCharacter->ConfirmHit();
+
+					if (HitMech->IsBot())
+					{
+						HitMech->DestructMech();
+					}
 				}
 			}
 		}
