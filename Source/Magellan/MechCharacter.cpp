@@ -389,7 +389,7 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 
 	// Interp rotation for torso
 	FRotator CurrentR = Torso->GetRelativeTransform().Rotator();
-	FRotator InterpRotator = FMath::RInterpConstantTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
+	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
 	
 	Torso->SetRelativeRotation(InterpRotator);
