@@ -496,7 +496,7 @@ float AMechCharacter::GetAltitude()
 FVector AMechCharacter::GetLookVector()
 {
 	// Initial aim, in case ray hits nothing
-	FVector Result = AimComponent->GetComponentLocation() + (AimComponent->GetForwardVector() * 10000.0f);
+	FVector Result = AimComponent->GetComponentLocation() + (AimComponent->GetForwardVector() * 550000.0f);
 
 	// Linecast ingredients
 	bool HitResult = false;

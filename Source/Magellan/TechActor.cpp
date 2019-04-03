@@ -201,8 +201,8 @@ void ATechActor::UpdateAimPoint()
 	}
 	else
 	{
-		FVector LocalOffset = MyMechCharacter->GetActorLocation();
-		AimPoint = LocalOffset + (GetActorForwardVector() * 20000.0f);
+		//FVector LocalOffset = MyMechCharacter->GetActorLocation();
+		AimPoint = MyMechCharacter->GetLookVector();
 	}
 }
 
