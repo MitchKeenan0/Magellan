@@ -53,7 +53,7 @@ void ATechActor::InitTechActor(AMechCharacter* TechOwner)
 				}
 
 				// Set timer for aim point update
-				GetWorld()->GetTimerManager().SetTimer(AimPointTimer, this, &ATechActor::UpdateAimPoint, 0.03f, true);
+				//GetWorld()->GetTimerManager().SetTimer(AimPointTimer, this, &ATechActor::UpdateAimPoint, 0.01f, true, 0.0f);
 			}
 		}
 	}
@@ -71,7 +71,7 @@ void ATechActor::Tick(float DeltaTime)
 			UpdateArticulation(DeltaTime);
 		}
 
-		//UpdateAimPoint();
+		UpdateAimPoint();
 	}
 }
 
@@ -193,7 +193,7 @@ void ATechActor::UpdateAimPoint()
 		EDrawDebugTrace::None,
 		Hit,
 		true,
-		FLinearColor::White, FLinearColor::Red, 0.1f);
+		FLinearColor::White, FLinearColor::Red, 0.001f);
 
 	if (HitResult && (!Hit.Actor->ActorHasTag("Ammo")))
 	{

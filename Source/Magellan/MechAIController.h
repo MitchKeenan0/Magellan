@@ -35,4 +35,11 @@ private:
 
 	UPROPERTY()
 	float MyInputZ = 0.0f;
+
+	UPROPERTY()
+	FVector TargetVector = FVector::ZeroVector;
+
+	UPROPERTY()
+	AMechCharacter* TargetMech = nullptr;
+
 };

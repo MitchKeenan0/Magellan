@@ -113,6 +113,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool IsBot() { return bCPU; }
 
+	UFUNCTION()
+	void UpdateBotMovement();
+
+	UFUNCTION()
+	void UpdateBotAim(float DeltaTime);
+
 
 	UFUNCTION()
 	void TestFunction(bool bOn);

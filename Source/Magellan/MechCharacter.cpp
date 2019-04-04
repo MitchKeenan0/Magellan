@@ -731,15 +731,50 @@ void AMechCharacter::UpdateBot(float DeltaTime)
 	}
 	else
 	{
-		FVector MyAim = AimComponent->GetRightVector().GetSafeNormal();
-		FVector ToPlayer = (TargetMech->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-		float DotToPlayer = FVector::DotProduct(MyAim, ToPlayer);
-		float LateralInput = FMath::Clamp(DotToPlayer * 100.0f, -50.0f, 50.0f);
-		
-		float Ease = FMath::Abs(DotToPlayer);
-		BotMouseX = FMath::FInterpTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * DotToPlayer);
-		BotMouseY = 0.0f;
+		UpdateBotAim(DeltaTime);
+		UpdateBotMovement();
 	}
+}
+
+void AMechCharacter::UpdateBotMovement()
+{
+	// Rotation ingredients yummy
+	FVector Flat = FVector(1.0f, 1.0f, 0.0f);
+	FVector TargetLocation = TargetMech->GetActorLocation(); /// needs better "target location"
+	FVector ToTarget = (TargetLocation - GetActorLocation());
+	FVector ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
+	
+	// Forward move
+	if (ToTarget.Size() >= 2000.0f)
+	{
+		float ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
+		if (FMath::Abs(ForwardMoveValue) > 0.25f)
+		{
+			MoveForward(ForwardMoveValue);
+		}
+	}
+
+	// Turning move
+	FVector ToHeadingRight = (GetActorRightVector() * Flat).GetSafeNormal();
+	float DotToTargetRight = FVector::DotProduct(ToHeadingRight, ToTargetNorm);
+	if (FMath::Abs(DotToTargetRight) > 0.05f)
+	{
+		float MoveTurnValue = FMath::Clamp(DotToTargetRight * 100.0f, -1.0f, 1.0f);
+		MoveTurn(MoveTurnValue);
+		LastMoveLateral = MoveTurnValue;
+	}
+}
+
+void AMechCharacter::UpdateBotAim(float DeltaTime)
+{
+	FVector MyAim = AimComponent->GetRightVector().GetSafeNormal();
+	FVector ToPlayer = (TargetMech->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+	float DotToPlayer = FVector::DotProduct(MyAim, ToPlayer);
+	float LateralInput = FMath::Clamp(DotToPlayer * 100.0f, -50.0f, 50.0f);
+
+	float Ease = FMath::Abs(DotToPlayer);
+	BotMouseX = FMath::FInterpTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * DotToPlayer);
+	BotMouseY = 0.0f;
 }
 
 
