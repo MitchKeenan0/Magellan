@@ -733,6 +733,18 @@ void AMechCharacter::UpdateBot(float DeltaTime)
 	{
 		UpdateBotAim(DeltaTime);
 		UpdateBotMovement();
+
+		if (!bBotTriggerDown)
+		{
+			PrimaryFire();
+			bBotTriggerDown = true;
+
+			if (FMath::RandRange(0.0f, 1.0f) > 0.95f)
+			{
+				bBotTriggerDown = false;
+				PrimaryStopFire();
+			}
+		}
 	}
 }
 
@@ -767,14 +779,20 @@ void AMechCharacter::UpdateBotMovement()
 
 void AMechCharacter::UpdateBotAim(float DeltaTime)
 {
-	FVector MyAim = AimComponent->GetRightVector().GetSafeNormal();
-	FVector ToPlayer = (TargetMech->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-	float DotToPlayer = FVector::DotProduct(MyAim, ToPlayer);
-	float LateralInput = FMath::Clamp(DotToPlayer * 100.0f, -50.0f, 50.0f);
-
-	float Ease = FMath::Abs(DotToPlayer);
-	BotMouseX = FMath::FInterpTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * DotToPlayer);
-	BotMouseY = 0.0f;
+	FVector ToPlayer = (TargetMech->GetActorLocation() - GetActorLocation());
+	FVector ToPlayerNorm = ToPlayer.GetSafeNormal();
+	
+	// Lateral
+	FVector LateralAim = AimComponent->GetRightVector().GetSafeNormal();
+	float LateralDot = FVector::DotProduct(LateralAim, ToPlayerNorm);
+	float LateralInput = FMath::Clamp(LateralDot * 100.0f, -50.0f, 50.0f);
+	BotMouseX = FMath::FInterpTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * LateralDot);
+	
+	// Vertical
+	FVector VerticalAim = AimComponent->GetUpVector().GetSafeNormal();
+	float VerticalDot = FVector::DotProduct(VerticalAim, ToPlayerNorm);
+	float VerticalInput = FMath::Clamp(VerticalDot * 100.0f, -50.0f, 50.0f);
+	BotMouseY = FMath::FInterpTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * VerticalDot);
 }
 
 

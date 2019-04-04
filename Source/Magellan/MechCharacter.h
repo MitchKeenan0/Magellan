@@ -295,6 +295,9 @@ private:
 	bool bCPU = false;
 
 	UPROPERTY()
+	bool bBotTriggerDown = false;
+
+	UPROPERTY()
 	bool bBraking;
 
 	UPROPERTY()

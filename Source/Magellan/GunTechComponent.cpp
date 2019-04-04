@@ -32,7 +32,10 @@ void UGunTechComponent::Fire()
 				Bullet->InitBullet(this);
 				Capacity -= 1.0f;
 
-				ShakeCamera();
+				if (!MyMechCharacter->IsBot())
+				{
+					ShakeCamera();
+				}
 			}
 		}
 	}
