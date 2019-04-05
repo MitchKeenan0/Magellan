@@ -39,6 +39,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	bool bOverlap = false;
 
+	UPROPERTY(EditDefaultsOnly)
+	float TimeAfterHit = 0.1f;
+
 	UPROPERTY(BlueprintReadOnly)
 	UTechComponent* MyTechComponent;
 

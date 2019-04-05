@@ -565,6 +565,7 @@ FVector AMechCharacter::GetAimPoint()
 	{
 		Result = GetActorLocation() + (CameraComp->GetForwardVector() * 100.0f);
 	}
+
 	return Result;
 }
 

@@ -90,7 +90,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 			MeshComp->SetRelativeScale3D(FVector::OneVector * 3.0f);
 			ProjectileMovement->SetVelocityInLocalSpace(FVector::ZeroVector);
 			ProjectileMovement->ProjectileGravityScale = 0.77f;
-			SetLifeSpan(0.5f);
+			SetLifeSpan(TimeAfterHit);
 
 			if (OtherActor != nullptr)
 			{
