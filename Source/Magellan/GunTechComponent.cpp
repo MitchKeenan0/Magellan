@@ -5,11 +5,11 @@
 
 void UGunTechComponent::ActivateTechComponent()
 {
-	if (AmmoType != nullptr)
+	if ((Capacity > 0.0f) && (AmmoType != nullptr))
 	{
 		float TimeBetweenShots = (1.0f / RateOfFire);
 		GetWorld()->GetTimerManager().SetTimer(AutoFireTimer, this, &UGunTechComponent::Fire, TimeBetweenShots, true, 0.0f);
-			//GetWorld()->GetTimerManager().SetTimer(AimPointTimer, this, &ATechActor::UpdateAimPoint, 0.03f, true);
+		//GetWorld()->GetTimerManager().SetTimer(AimPointTimer, this, &ATechActor::UpdateAimPoint, 0.03f, true);
 	}
 }
 
@@ -20,24 +20,30 @@ void UGunTechComponent::DeactivateTechComponent()
 
 void UGunTechComponent::Fire()
 {
-	FActorSpawnParameters SpawnInfo;
-	AActor* NewBullet = GetWorld()->SpawnActor<AActor>(AmmoType, EmitPoint->GetComponentLocation(), EmitPoint->GetComponentRotation(), SpawnInfo);
-	if (NewBullet != nullptr)
+	if (Capacity > 0.0f)
 	{
-		if (MyMechCharacter != nullptr)
+		FActorSpawnParameters SpawnInfo;
+		AActor* NewBullet = GetWorld()->SpawnActor<AActor>(AmmoType, EmitPoint->GetComponentLocation(), EmitPoint->GetComponentRotation(), SpawnInfo);
+		if (NewBullet != nullptr)
 		{
-			ABulletActor* Bullet = Cast<ABulletActor>(NewBullet);
-			if (Bullet != nullptr)
+			if (MyMechCharacter != nullptr)
 			{
-				Bullet->InitBullet(this);
-				Capacity -= 1.0f;
-
-				if (!MyMechCharacter->IsBot())
+				ABulletActor* Bullet = Cast<ABulletActor>(NewBullet);
+				if (Bullet != nullptr)
 				{
-					ShakeCamera();
+					Bullet->InitBullet(this);
+					Capacity -= 1.0f;
+
+					if (!MyMechCharacter->IsBot())
+					{
+						ShakeCamera();
+					}
 				}
 			}
 		}
+	}
+	else {
+		DeactivateTechComponent();
 	}
 }
 

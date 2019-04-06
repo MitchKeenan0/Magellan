@@ -91,6 +91,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 			ProjectileMovement->SetVelocityInLocalSpace(FVector::ZeroVector);
 			ProjectileMovement->ProjectileGravityScale = 0.77f;
 			SetLifeSpan(TimeAfterHit);
+			CollisionBox->SetGenerateOverlapEvents(false);
 
 			if (OtherActor != nullptr)
 			{

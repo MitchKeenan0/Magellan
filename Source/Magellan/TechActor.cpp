@@ -140,7 +140,7 @@ void ATechActor::UpdateArticulation(float DeltaTime)
 				TargetRotation.Pitch = MechTorsoRotation.Pitch;
 			}
 
-			if (ty > my)
+			if ((ty > my) || (ArticulationYaw == 0.0f))
 			{
 				TargetRotation.Yaw = MechTorsoRotation.Yaw;
 			}
