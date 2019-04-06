@@ -758,7 +758,7 @@ void AMechCharacter::UpdateBotMovement()
 	FVector ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
 	
 	// Forward move
-	if (ToTarget.Size() >= 2000.0f)
+	if (ToTarget.Size() >= 90000.0f)
 	{
 		float ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
 		if (FMath::Abs(ForwardMoveValue) > 0.25f)
