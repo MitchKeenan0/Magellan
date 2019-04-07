@@ -12,8 +12,14 @@ AMechCharacter::AMechCharacter()
 	AimComponent = CreateDefaultSubobject<USceneComponent>(TEXT("AimComponent"));
 	AimComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
+	TorsoCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("TorsoCollider"));
+	TorsoCollider->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+
+	LegCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("LegCollider"));
+	LegCollider->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+
 	Torso = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Torso"));
-	Torso->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	Torso->AttachToComponent(TorsoCollider, FAttachmentTransformRules::KeepRelativeTransform);
 
 	Outfit = CreateDefaultSubobject<UMechOutfitComponent>(TEXT("Outfit"));
 
@@ -32,6 +38,8 @@ AMechCharacter::AMechCharacter()
 	CameraComp->FieldOfView = 100.0f;
 
 	JumpMaxHoldTime = MaxJumpTime;
+
+	bUseControllerRotationYaw = false;
 
 	//OnBrakeDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
 	//OnDodgeDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
@@ -65,24 +73,25 @@ void AMechCharacter::DestructMech()
 	{
 		GetController()->UnPossess();
 	}
+
+	if (bCPU)
+	{
+		StopBotUpdate();
+		SetActorEnableCollision(false);
+		SetLifeSpan(3.0f);
+	}
 	
 	if (Outfit != nullptr)
 	{
 		Outfit->ClearOutfit();
 	}
 
-	Torso->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-	Torso->SetSimulatePhysics(true);
-	Torso->WakeRigidBody();
+	TorsoCollider->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	TorsoCollider->SetSimulatePhysics(true);
+	TorsoCollider->WakeRigidBody();
 
 	FVector PopLocation = GetActorLocation() + (FMath::VRand() * 20.0f);
-	Torso->AddRadialForce(PopLocation, 1500.0f, 11555000.0f, ERadialImpulseFalloff::RIF_Linear, false);
-
-	if (bCPU)
-	{
-		SetActorEnableCollision(false);
-		SetLifeSpan(3.0f);
-	}
+	TorsoCollider->AddRadialForce(PopLocation, 1500.0f, 11555000.0f, ERadialImpulseFalloff::RIF_Linear, false);
 }
 
 void AMechCharacter::InitMech()
@@ -102,11 +111,20 @@ void AMechCharacter::InitMech()
 	GetMesh()->SetOwnerNoSee(true);
 
 	TrimOutfit();
-	OffsetCamera(FVector::ZeroVector, FRotator::ZeroRotator, FOV);
+	OffsetCamera(FVector::ZeroVector, FRotator::ZeroRotator, PlayerFOV);
 	GetController()->SetControlRotation(GetActorRotation());
 
 	FOutputDraw IdleDraw;
 	OutputDraws.Init(IdleDraw, 1);
+}
+
+void AMechCharacter::StartBotUpdate()
+{
+	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 2.0f);
+}
+void AMechCharacter::StopBotUpdate()
+{
+	GetWorld()->GetTimerManager().ClearTimer(BotUpdateTimer);
 }
 
 // Called every frame
@@ -123,10 +141,10 @@ void AMechCharacter::Tick(float DeltaTime)
 		{
 			UpdateTelemetry(DeltaTime);
 		}
-		else
+		/*else /// replaced with timer
 		{
 			UpdateBot(DeltaTime);
-		}
+		}*/
 	}
 }
 
@@ -274,9 +292,9 @@ void AMechCharacter::Dodge()
 
 void AMechCharacter::CentreMech()
 {
-	if (Torso != nullptr)
+	if (TorsoCollider != nullptr)
 	{
-		Torso->SetRelativeRotation(FRotator::ZeroRotator);
+		TorsoCollider->SetRelativeRotation(FRotator::ZeroRotator);
 	}
 
 	if (AimComponent != nullptr)
@@ -294,7 +312,7 @@ void AMechCharacter::CentreMech()
 				ATechActor* ThisTech = Outfit->HardpointTechs[i];
 				if (ThisTech != nullptr)
 				{
-					ThisTech->SetActorRotation(Torso->GetComponentRotation());
+					ThisTech->SetActorRotation(TorsoCollider->GetComponentRotation());
 				}
 			}
 		}
@@ -388,11 +406,11 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	AimComponent->SetRelativeRotation(AimRotation);
 
 	// Interp rotation for torso
-	FRotator CurrentR = Torso->GetRelativeTransform().Rotator();
+	FRotator CurrentR = TorsoCollider->GetRelativeTransform().Rotator();
 	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
 	
-	Torso->SetRelativeRotation(InterpRotator);
+	TorsoCollider->SetRelativeRotation(InterpRotator);
 }
 
 void AMechCharacter::UpdateLean(float DeltaTime)
@@ -510,7 +528,7 @@ FVector AMechCharacter::GetLookVector()
 	
 	// Ignore Torso & Tech
 	TArray<AActor*> IgnoredActors;
-	IgnoredActors.Add(Torso->GetOwner());
+	IgnoredActors.Add(TorsoCollider->GetOwner());
 	int NumTechs = Outfit->HardpointTechs.Num();
 	if (NumTechs > 0)
 	{
@@ -540,7 +558,7 @@ FVector AMechCharacter::GetLookVector()
 		true,
 		FLinearColor::Red, FLinearColor::Red, 5.0f);
 
-	if (HitResult)
+	if (HitResult && !(Hit.Actor->ActorHasTag("Ammo")))
 	{
 		Result = Hit.ImpactPoint;
 	}
@@ -563,7 +581,7 @@ FVector AMechCharacter::GetAimPoint()
 	
 	if (Result == FVector::ZeroVector)
 	{
-		Result = GetActorLocation() + (CameraComp->GetForwardVector() * 100.0f);
+		Result = GetActorLocation() + (CameraComp->GetForwardVector() * 100000.0f);
 	}
 
 	return Result;
@@ -571,7 +589,7 @@ FVector AMechCharacter::GetAimPoint()
 
 FVector AMechCharacter::GetTorsoPoint()
 {
-	FVector TorsoDirection = Torso->GetForwardVector() * 20000.0f;
+	FVector TorsoDirection = TorsoCollider->GetForwardVector() * 20000.0f;
 	FVector Result = GetActorLocation() + TorsoDirection;
 	return Result;
 }
@@ -580,10 +598,10 @@ float AMechCharacter::GetLegsToTorsoAngle()
 {
 	// Collapses the vectors onto the world plane and returns angle in world space
 	FVector LegsForward = ( GetMesh()->GetForwardVector() * FVector(1.0f, 1.0f, 0.0f) ).GetSafeNormal();
-	FVector TorsoForward = ( GetTorso()->GetForwardVector() * FVector(1.0f, 1.0f, 0.0f) ).GetSafeNormal();
+	FVector TorsoForward = ( TorsoCollider->GetForwardVector() * FVector(1.0f, 1.0f, 0.0f) ).GetSafeNormal();
 	float Dot = FVector::DotProduct(LegsForward, TorsoForward);
 	float RoughAngle = FMath::RadiansToDegrees(FMath::Acos(Dot));
-	float YawDirection = FMath::Clamp(GetTorso()->RelativeRotation.Yaw, -1.0f, 1.0f);
+	float YawDirection = FMath::Clamp(TorsoCollider->RelativeRotation.Yaw, -1.0f, 1.0f);
 	float Result = (RoughAngle * YawDirection) * -1.0f;
 	return Result;
 }
@@ -610,8 +628,8 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 {
 	if (AvailableTechPointers.Num() >= (TechID + 1))
 	{
-		ATechActor* NewTech = AvailableTechPointers[TechID];
-		if (NewTech != nullptr)
+		ATechActor* NewTechType = AvailableTechPointers[TechID];
+		if (NewTechType != nullptr)
 		{
 			FActorSpawnParameters SpawnInfo;
 			SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -623,7 +641,7 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 				
 				///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Fitted new tech"));
 
-				NewTech->AttachToComponent(Torso, FAttachmentTransformRules::KeepRelativeTransform);
+				NewTech->AttachToComponent(TorsoCollider, FAttachmentTransformRules::KeepRelativeTransform);
 				
 				FVector SetLocation = Outfit->HardpointLocations[TechHardpoint];
 				NewTech->SetActorRelativeLocation(SetLocation);
@@ -724,7 +742,7 @@ void AMechCharacter::ConfirmHit()
 	}
 }
 
-void AMechCharacter::UpdateBot(float DeltaTime)
+void AMechCharacter::UpdateBot()
 {
 	if (!TargetMech)
 	{
@@ -732,15 +750,22 @@ void AMechCharacter::UpdateBot(float DeltaTime)
 	}
 	else
 	{
+		float DeltaTime = GetWorld()->DeltaTimeSeconds;
+		
 		UpdateBotAim(DeltaTime);
 		UpdateBotMovement();
 
-		if (!bBotTriggerDown)
+		if (GetAngleToTarget() < 5.0f)
 		{
-			PrimaryFire();
-			bBotTriggerDown = true;
-
-			if (FMath::RandRange(0.0f, 1.0f) > 0.95f)
+			if ((!bBotTriggerDown) && (FMath::FRandRange(0.0f, 1.0f) > 0.9f))
+			{
+				PrimaryFire();
+				bBotTriggerDown = true;
+			}
+		}
+		else if (bBotTriggerDown)
+		{
+			if (FMath::FRandRange(0.0f, 1.0f) > 0.5f)
 			{
 				bBotTriggerDown = false;
 				PrimaryStopFire();
@@ -758,7 +783,7 @@ void AMechCharacter::UpdateBotMovement()
 	FVector ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
 	
 	// Forward move
-	if (ToTarget.Size() >= 90000.0f)
+	if (ToTarget.Size() >= 10000.0f)
 	{
 		float ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
 		if (FMath::Abs(ForwardMoveValue) > 0.25f)
@@ -781,19 +806,35 @@ void AMechCharacter::UpdateBotMovement()
 void AMechCharacter::UpdateBotAim(float DeltaTime)
 {
 	FVector ToPlayer = (TargetMech->GetActorLocation() - GetActorLocation());
-	FVector ToPlayerNorm = ToPlayer.GetSafeNormal();
+	FVector PlayerVelocity = TargetMech->GetCharacterMovement()->Velocity * 0.1f;
+	FVector ToPlayerSpeed = (ToPlayer + PlayerVelocity).GetSafeNormal();
+	FVector ToPlayerSpeedNorm = ToPlayerSpeed.GetSafeNormal();
+	FRotator MechLean = GetActorRotation();
 	
 	// Lateral
 	FVector LateralAim = AimComponent->GetRightVector().GetSafeNormal();
-	float LateralDot = FVector::DotProduct(LateralAim, ToPlayerNorm);
+	float LateralDot = FVector::DotProduct(LateralAim, ToPlayerSpeedNorm);
 	float LateralInput = FMath::Clamp(LateralDot * 100.0f, -50.0f, 50.0f);
 	BotMouseX = FMath::FInterpTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * LateralDot);
 	
+
 	// Vertical
 	FVector VerticalAim = AimComponent->GetUpVector().GetSafeNormal();
-	float VerticalDot = FVector::DotProduct(VerticalAim, ToPlayerNorm);
-	float VerticalInput = FMath::Clamp(VerticalDot * 100.0f, -50.0f, 50.0f);
+	float VerticalDot = FVector::DotProduct(VerticalAim, ToPlayerSpeedNorm);
+	float PitchCorrection = -MechLean.Pitch * 0.2f;
+	float VerticalInput = FMath::Clamp((VerticalDot * 100.0f) + PitchCorrection, -50.0f, 50.0f);
 	BotMouseY = FMath::FInterpTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * VerticalDot);
+}
+
+float AMechCharacter::GetAngleToTarget()
+{
+	float Result = 0.0f;
+	FVector TechVector = GetEquippedTechActor()->GetActorForwardVector().GetSafeNormal();
+	FVector AimVector = (GetLookVector() - GetEquippedTechActor()->GetActorLocation()).GetSafeNormal();
+	float DotToPerfectShot = FVector::DotProduct(TechVector, AimVector);
+	Result = FMath::RadiansToDegrees(FMath::Acos(DotToPerfectShot));
+	GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::White, FString::Printf(TEXT("TechAngleToTarget: %f"), Result));
+	return Result;
 }
 
 

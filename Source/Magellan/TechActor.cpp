@@ -157,6 +157,7 @@ void ATechActor::UpdateArticulation(float DeltaTime)
 		{
 			InterpRotator = FMath::RInterpConstantTo(CurrentRotation, TargetRotation, DeltaTime, ArticulationSpeed);
 		}
+		InterpRotator.Roll = MyMechCharacter->GetActorRotation().Roll;
 
 		SetActorRotation(InterpRotator);
 	}

@@ -87,12 +87,12 @@ void ABulletActor::Collide(AActor* OtherActor)
 			bHit = true;
 
 			// Hacky temp explosion
+			CollisionBox->SetGenerateOverlapEvents(false);
 			MeshComp->SetRelativeScale3D(FVector::OneVector * 3.0f);
 			ProjectileMovement->SetVelocityInLocalSpace(FVector::ZeroVector);
 			ProjectileMovement->ProjectileGravityScale = 0.77f;
 			SetLifeSpan(TimeAfterHit);
-			CollisionBox->SetGenerateOverlapEvents(false);
-
+			
 			if (OtherActor != nullptr)
 			{
 				AMechCharacter* HitMech = Cast<AMechCharacter>(OtherActor);

@@ -105,13 +105,19 @@ public:
 	FVector GetTorsoPoint();
 
 	UFUNCTION(BlueprintCallable)
-	USkeletalMeshComponent* GetTorso() { return Torso; }
+	UBoxComponent* GetTorso() { return TorsoCollider; }
 
 	UFUNCTION()
 	void SetIsBot(bool Value) { bCPU = Value; }
 
 	UFUNCTION(BlueprintCallable)
 	bool IsBot() { return bCPU; }
+
+	UFUNCTION()
+	void StartBotUpdate();
+
+	UFUNCTION()
+	void StopBotUpdate();
 
 	UFUNCTION()
 	void UpdateBotMovement();
@@ -145,8 +151,11 @@ protected:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	UPROPERTY(BlueprintReadOnly)
+	FTimerHandle BotUpdateTimer;
+
 	UFUNCTION(BlueprintCallable)
-	void UpdateBot(float DeltaTime);
+	void UpdateBot();
 
 	void MoveRight(float Value);
 	void MoveForward(float Value);
@@ -161,6 +170,8 @@ protected:
 
 	void PrimaryFire();
 	void PrimaryStopFire();
+
+	float GetAngleToTarget();
 
 	void UpdateLean(float DeltaTime);
 	
@@ -201,8 +212,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	USceneComponent* AimComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
+	UBoxComponent* TorsoCollider;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Body")
 	USkeletalMeshComponent* Torso;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
+	UBoxComponent* LegCollider;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	UMechOutfitComponent* Outfit;
@@ -260,7 +277,7 @@ protected:
 	float TorsoMaxPitch = 80.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
-	float FOV = 100.0f;
+	float PlayerFOV = 100.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float CameraSensitivity = 1.0f;

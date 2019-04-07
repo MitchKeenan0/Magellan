@@ -29,10 +29,9 @@ void AMechAIController::InitMechBot(AMechCharacter* Mech)
 		
 		// Set up tech
 		MyMechCharacter->InitOptions();
-		
-		//MyMechCharacter->BuildTech(0, 0);
-		//MyMechCharacter->BuildTech(1, 1);
-
 		MyMechCharacter->TrimOutfit();
+		MyMechCharacter->StartBotUpdate();
+
+		SetControlRotation(MyMechCharacter->GetActorRotation());
 	}
 }
