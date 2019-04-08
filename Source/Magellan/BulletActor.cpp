@@ -35,6 +35,7 @@ void ABulletActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	
 }
 
 // Called every frame

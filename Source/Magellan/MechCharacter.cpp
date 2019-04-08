@@ -14,6 +14,7 @@ AMechCharacter::AMechCharacter()
 
 	TorsoCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("TorsoCollider"));
 	TorsoCollider->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	TorsoCollider->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	LegCollider = CreateDefaultSubobject<UBoxComponent>(TEXT("LegCollider"));
 	LegCollider->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
@@ -71,29 +72,39 @@ void AMechCharacter::DestructMech()
 {
 	if (GetController() != nullptr)
 	{
-		GetController()->UnPossess();
-	}
+		FVector LastVelocity = GetCharacterMovement()->Velocity;
+		LaunchCharacter(LastVelocity, true, true);
 
-	if (bCPU)
-	{
-		StopBotUpdate();
-		SetActorEnableCollision(false);
-		SetLifeSpan(3.0f);
-	}
-	
-	if (Outfit != nullptr)
-	{
-		Outfit->ClearOutfit();
-	}
+		if (bCPU)
+		{
+			StopBotUpdate();
+			
+			if (GetLifeSpan() == 0.0f)
+			{
+				SetLifeSpan(3.0f);
+				GetController()->SetLifeSpan(3.0f);
+			}
+		}
 
-	TorsoCollider->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-	TorsoCollider->SetSimulatePhysics(true);
-	TorsoCollider->WakeRigidBody();
+		if (Outfit != nullptr)
+		{
+			Outfit->ClearOutfit();
+		}
 
-	FVector Offset = (FMath::VRand() * 200.0f);
-	Offset.Z *= 0.1f;
-	FVector PopLocation = GetActorLocation() + Offset;
-	TorsoCollider->AddRadialForce(PopLocation, 1500.0f, 95000.0f, ERadialImpulseFalloff::RIF_Linear, false);
+		TorsoCollider->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		TorsoCollider->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+		TorsoCollider->SetSimulatePhysics(true);
+		TorsoCollider->WakeRigidBody();
+		
+		FVector Offset = (FMath::VRand() * 200.0f);
+		if (Offset.Z < 0.0f)
+		{
+			Offset.Z *= -1.0f;
+		}
+		FVector PopLocation = GetActorLocation() + Offset;
+		TorsoCollider->AddImpulse(Offset * 1000.0f);
+		TorsoCollider->AddTorque(Offset * 100.0f);
+	}
 }
 
 void AMechCharacter::InitMech()
@@ -127,6 +138,7 @@ void AMechCharacter::StartBotUpdate()
 void AMechCharacter::StopBotUpdate()
 {
 	GetWorld()->GetTimerManager().ClearTimer(BotUpdateTimer);
+	PrimaryStopFire();
 }
 
 // Called every frame
@@ -187,16 +199,17 @@ void AMechCharacter::MoveForward(float Value)
 	LastMoveForward = Value;
 
 	// Bring legs around towards look direction
-	if (Value > 0.1f)
+	if (Value != 0.0f)
 	{
 		float LegsAngle = GetLegsToTorsoAngle();
+		float AlignSpeed = FMath::Abs(LegsAngle) * 0.01f;
 		if (LegsAngle < -5.0f)
 		{
-			MoveTurn(1.0f);
+			MoveTurn(AlignSpeed);
 		}
 		else if (LegsAngle > 5.0f)
 		{
-			MoveTurn(-1.0f);
+			MoveTurn(-AlignSpeed);
 		}
 	}
 }
@@ -765,9 +778,29 @@ void AMechCharacter::ConfirmHit()
 
 void AMechCharacter::UpdateBot()
 {
-	if (!TargetMech)
+	if (!TargetMech || (FMath::RandRange(0.0f, 1.0f) > 0.95f))
 	{
-		TargetMech = Cast<AMechCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+		// Player
+		//TargetMech = Cast<AMechCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
+
+		TArray<AActor*> Mechs;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMechCharacter::StaticClass(), Mechs);
+		int MechNum = Mechs.Num();
+		if (MechNum > 0)
+		{
+			for (AActor* Mech : Mechs)
+			{
+				AMechCharacter* MechC = Cast<AMechCharacter>(Mech);
+				if (MechC != nullptr)
+				{
+					if (MechC != this)
+					{
+						TargetMech = MechC;
+						continue;
+					}
+				}
+			}
+		}
 	}
 	else
 	{
@@ -854,10 +887,13 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 float AMechCharacter::GetAngleToTarget()
 {
 	float Result = 0.0f;
-	FVector TechVector = GetEquippedTechActor()->GetActorForwardVector().GetSafeNormal();
-	FVector AimVector = (GetLookVector() - GetEquippedTechActor()->GetActorLocation()).GetSafeNormal();
-	float DotToPerfectShot = FVector::DotProduct(TechVector, AimVector);
-	Result = FMath::RadiansToDegrees(FMath::Acos(DotToPerfectShot));
+	if (GetEquippedTechActor() != nullptr)
+	{
+		FVector TechVector = GetEquippedTechActor()->GetActorForwardVector().GetSafeNormal();
+		FVector AimVector = (GetLookVector() - GetEquippedTechActor()->GetActorLocation()).GetSafeNormal();
+		float DotToPerfectShot = FVector::DotProduct(TechVector, AimVector);
+		Result = FMath::RadiansToDegrees(FMath::Acos(DotToPerfectShot));
+	}
 	return Result;
 }
 

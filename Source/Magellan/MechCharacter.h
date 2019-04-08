@@ -215,7 +215,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	USceneComponent* AimComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Body")
 	UBoxComponent* TorsoCollider;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Body")
