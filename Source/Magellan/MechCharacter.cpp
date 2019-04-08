@@ -90,8 +90,10 @@ void AMechCharacter::DestructMech()
 	TorsoCollider->SetSimulatePhysics(true);
 	TorsoCollider->WakeRigidBody();
 
-	FVector PopLocation = GetActorLocation() + (FMath::VRand() * 20.0f);
-	TorsoCollider->AddRadialForce(PopLocation, 1500.0f, 11555000.0f, ERadialImpulseFalloff::RIF_Linear, false);
+	FVector Offset = (FMath::VRand() * 200.0f);
+	Offset.Z *= 0.1f;
+	FVector PopLocation = GetActorLocation() + Offset;
+	TorsoCollider->AddRadialForce(PopLocation, 1500.0f, 95000.0f, ERadialImpulseFalloff::RIF_Linear, false);
 }
 
 void AMechCharacter::InitMech()
@@ -107,7 +109,7 @@ void AMechCharacter::InitMech()
 		}
 	}
 	
-	GetTorso()->SetOwnerNoSee(true);
+	Torso->SetOwnerNoSee(true);
 	GetMesh()->SetOwnerNoSee(true);
 
 	TrimOutfit();
@@ -183,6 +185,20 @@ void AMechCharacter::MoveForward(float Value)
 	AddMovementInput(GetMesh()->GetForwardVector(), Value * MoveSpeed);
 
 	LastMoveForward = Value;
+
+	// Bring legs around towards look direction
+	if (Value > 0.1f)
+	{
+		float LegsAngle = GetLegsToTorsoAngle();
+		if (LegsAngle < -5.0f)
+		{
+			MoveTurn(1.0f);
+		}
+		else if (LegsAngle > 5.0f)
+		{
+			MoveTurn(-1.0f);
+		}
+	}
 }
 void AMechCharacter::MoveTurn(float Value)
 {
@@ -191,12 +207,17 @@ void AMechCharacter::MoveTurn(float Value)
 	FRotator NewRotation = GetActorRotation();
 	NewRotation.Yaw += (Value * GetWorld()->DeltaTimeSeconds * TurnSpeed);
 
+	// Turning and Aim counter-rotation
 	FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), NewRotation, GetWorld()->DeltaTimeSeconds, TurnSpeed);
+	FRotator DeltaRotation = InterpRotation - GetActorRotation();
+	DeltaRotation.Roll = 0.0f;
+
 	SetActorRotation(InterpRotation);
+	AimComponent->AddRelativeRotation(DeltaRotation * -1.0f);
 
 	if (LastMoveLateral == 0.0f)
 	{
-		/// also for lean
+		/// For lean
 		LastMoveLateral = Value;
 	}
 }
@@ -759,8 +780,12 @@ void AMechCharacter::UpdateBot()
 		{
 			if ((!bBotTriggerDown) && (FMath::FRandRange(0.0f, 1.0f) > 0.9f))
 			{
-				PrimaryFire();
-				bBotTriggerDown = true;
+				FVector TargetLocation = TargetMech->GetActorLocation();
+				if (HasLineOfSightTo(TargetLocation))
+				{
+					PrimaryFire();
+					bBotTriggerDown = true;
+				}
 			}
 		}
 		else if (bBotTriggerDown)
@@ -833,7 +858,31 @@ float AMechCharacter::GetAngleToTarget()
 	FVector AimVector = (GetLookVector() - GetEquippedTechActor()->GetActorLocation()).GetSafeNormal();
 	float DotToPerfectShot = FVector::DotProduct(TechVector, AimVector);
 	Result = FMath::RadiansToDegrees(FMath::Acos(DotToPerfectShot));
-	GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::White, FString::Printf(TEXT("TechAngleToTarget: %f"), Result));
+	return Result;
+}
+
+bool AMechCharacter::HasLineOfSightTo(FVector Location)
+{
+	bool Result = false;
+
+	if (TargetMech != nullptr)
+	{
+		FHitResult Hit;
+		FVector LineStart = TorsoCollider->GetComponentLocation() + (AimComponent->GetForwardVector() * 110.0f);
+		bool Linecast = GetWorld()->LineTraceSingleByChannel(
+			Hit, 
+			LineStart,
+			Location,
+			ECollisionChannel::ECC_Pawn);
+		if (Linecast)
+		{
+			if (Hit.Actor == TargetMech)
+			{
+				Result = true;
+			}
+		}
+	}
+
 	return Result;
 }
 

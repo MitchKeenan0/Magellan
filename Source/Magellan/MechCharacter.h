@@ -104,6 +104,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FVector GetTorsoPoint();
 
+	UFUNCTION()
+	bool HasLineOfSightTo(FVector Location);
+
 	UFUNCTION(BlueprintCallable)
 	UBoxComponent* GetTorso() { return TorsoCollider; }
 
