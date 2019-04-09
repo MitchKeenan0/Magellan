@@ -499,9 +499,9 @@ void AMechCharacter::UpdateTelemetry(float DeltaTime)
 
 		if (OnTelemetryDelegate.IsBound())
 		{
-			bool bAirborne = GetCharacterMovement()->IsFalling();
 			float Velocity = GetCharacterMovement()->Velocity.Size() * 0.04f;
 			float Altitude = GetAltitude();
+			bool bAirborne = (Altitude > 5.0f); /// GetCharacterMovement()->IsFalling();
 			OnTelemetryDelegate.Broadcast(bAirborne, Velocity, Altitude);
 		}
 	}

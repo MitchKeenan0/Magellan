@@ -89,7 +89,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 
 			// Hacky temp explosion
 			CollisionBox->SetGenerateOverlapEvents(false);
-			MeshComp->SetRelativeScale3D(FVector::OneVector * 3.0f);
+			MeshComp->SetRelativeScale3D(FVector::OneVector * 2.0f);
 			ProjectileMovement->SetVelocityInLocalSpace(FVector::ZeroVector);
 			ProjectileMovement->ProjectileGravityScale = 0.77f;
 			SetLifeSpan(TimeAfterHit);
