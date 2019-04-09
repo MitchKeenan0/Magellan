@@ -46,7 +46,7 @@ void UMechOutfitComponent::ClearOutfit()
 			}
 		}
 
-		HardpointTechs.Empty();
+		//HardpointTechs.Empty();
 	}
 }
 

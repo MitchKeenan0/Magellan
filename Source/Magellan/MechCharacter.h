@@ -86,7 +86,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void TrimOutfit();
 
+	UFUNCTION(BlueprintCallable)
+	void SetTeam(int NewTeamID);
 
+	UFUNCTION(BlueprintCallable)
+	int GetTeam() { return TeamID; }
 
 	UFUNCTION()
 	void ConfirmHit();
@@ -313,6 +317,9 @@ public:
 private:
 	UPROPERTY()
 	bool bCPU = false;
+
+	UPROPERTY()
+	int TeamID = 0;
 
 	UPROPERTY()
 	bool bBotTriggerDown = false;

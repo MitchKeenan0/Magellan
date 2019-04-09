@@ -101,7 +101,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 				{
 					MyMechCharacter->ConfirmHit();
 
-					if (HitMech->IsBot())
+					if (HitMech->IsBot() && (HitMech->GetLifeSpan() == 0.0f))
 					{
 						HitMech->DestructMech();
 					}
