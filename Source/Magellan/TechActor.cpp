@@ -54,6 +54,8 @@ void ATechActor::InitTechActor(AMechCharacter* TechOwner)
 
 				// Set timer for aim point update
 				//GetWorld()->GetTimerManager().SetTimer(AimPointTimer, this, &ATechActor::UpdateAimPoint, 0.01f, true, 0.0f);
+
+				BulletSpeed = MyTechComponent->GetAmmoSpeed();
 			}
 		}
 	}
@@ -123,6 +125,22 @@ void ATechActor::UpdateArticulation(float DeltaTime)
 	{
 		FVector TargetVector = (MyMechCharacter->GetLookVector() - GetActorLocation());
 		FRotator TargetRotation = TargetVector.Rotation();
+
+		// Trajectory
+		if ((AmmoType != nullptr) && (MyTechComponent != nullptr))
+		{
+			float BulletSpeed = MyTechComponent->GetAmmoSpeed();
+			if (BulletSpeed != 0.0f)
+			{
+				float Distance = FVector::Dist(GetActorLocation(), (GetActorLocation() + GetAimPoint()));
+				float gd = (9.0f * Distance);
+				float v2 = FMath::Square(BulletSpeed);
+				float theta = 10.0f * FMath::RadiansToDegrees(FMath::FastAsin(gd / v2));
+
+				TargetRotation.Pitch += theta;
+				///GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, FString::Printf(TEXT("theta: %f"), theta));
+			}
+		}
 
 		// Clamping relative to Torso
 		if (MyMechCharacter->GetTorso() != nullptr)
@@ -194,7 +212,7 @@ void ATechActor::UpdateAimPoint()
 		EDrawDebugTrace::None,
 		Hit,
 		true,
-		FLinearColor::White, FLinearColor::Red, 0.001f);
+		FLinearColor::White, FLinearColor::Red, 0.1f);
 
 	if (HitResult && (!Hit.Actor->ActorHasTag("Ammo")))
 	{

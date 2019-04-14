@@ -115,4 +115,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+private:
+	UPROPERTY()
+	float BulletSpeed = 0.0f;
+
 };

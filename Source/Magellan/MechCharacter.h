@@ -108,6 +108,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FVector GetTorsoPoint();
 
+	UFUNCTION(BlueprintCallable)
+	AMechCharacter* GetTargetMech() { return TargetMech; }
+
 	UFUNCTION()
 	bool HasLineOfSightTo(FVector Location);
 

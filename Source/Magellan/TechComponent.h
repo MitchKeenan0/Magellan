@@ -35,7 +35,14 @@ public:
 	UFUNCTION(BlueprintCallable)
 	virtual void DeactivateTechComponent();
 	
+	UFUNCTION()
+	float GetAmmoSpeed() { return AmmoSpeed; }
+
 	
+	
+	UPROPERTY(EditDefaultsOnly)
+	float AmmoSpeed = 35000.0f;
+
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AActor> AmmoType;
 

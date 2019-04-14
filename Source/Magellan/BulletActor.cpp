@@ -114,7 +114,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 
 void ABulletActor::OnBulletBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (!bHit) ///bOverlap && 
+	if (!bHit && !OtherActor->ActorHasTag("Ammo")) ///bOverlap && 
 	{
 		Collide(OtherActor);
 	}
@@ -122,7 +122,7 @@ void ABulletActor::OnBulletBeginOverlap(UPrimitiveComponent* OverlappedComponent
 
 void ABulletActor::OnBulletHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (!bHit) ///!bOverlap && 
+	if (!bHit && !OtherActor->ActorHasTag("Ammo")) ///!bOverlap && 
 	{
 		Collide(OtherActor);
 	}

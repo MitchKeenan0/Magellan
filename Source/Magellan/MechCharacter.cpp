@@ -858,7 +858,7 @@ void AMechCharacter::UpdateBotMovement()
 	FVector ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
 	
 	// Forward move
-	if (ToTarget.Size() >= 27000.0f)
+	if (ToTarget.Size() >= 50000.0f)
 	{
 		float ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
 		if (FMath::Abs(ForwardMoveValue) > 0.25f)
@@ -881,7 +881,7 @@ void AMechCharacter::UpdateBotMovement()
 void AMechCharacter::UpdateBotAim(float DeltaTime)
 {
 	FVector ToPlayer = (TargetMech->GetActorLocation() - GetActorLocation());
-	FVector PlayerVelocity = TargetMech->GetCharacterMovement()->Velocity * 0.1f;
+	FVector PlayerVelocity = TargetMech->GetCharacterMovement()->Velocity * 0.7f;
 	FVector ToPlayerSpeed = (ToPlayer + PlayerVelocity).GetSafeNormal();
 	FVector ToPlayerSpeedNorm = ToPlayerSpeed.GetSafeNormal();
 	
@@ -896,6 +896,17 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 	FVector VerticalAim = AimComponent->GetUpVector().GetSafeNormal();
 	float VerticalDot = FVector::DotProduct(VerticalAim, ToPlayerSpeedNorm);
 	float VerticalInput = FMath::Clamp((VerticalDot * 10.0f), -50.0f, 50.0f);
+	
+	//// Bullet-drop consideration
+	//float BulletSpeed = GetEquippedTechActor()->GetTechComponent()->GetAmmoSpeed();
+	//if (BulletSpeed != 0.0f)
+	//{
+	//	float Distance = ToPlayer.Size();
+	//	float gd = (27.0f * Distance);
+	//	float v2 = FMath::Square(BulletSpeed);
+	//	float theta = 90.0f - ((0.5f) * FMath::Asin(gd / v2));
+	//}
+
 	BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * 50.0f);
 }
 
