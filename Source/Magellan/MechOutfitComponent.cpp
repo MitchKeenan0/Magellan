@@ -41,7 +41,7 @@ void UMechOutfitComponent::ClearOutfit()
 		{
 			if (Tech != nullptr)
 			{
-				Tech->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+				Tech->SetPhysical();
 				Tech->SetLifeSpan(1.0f);
 			}
 		}

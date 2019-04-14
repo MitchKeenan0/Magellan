@@ -177,6 +177,8 @@ protected:
 	void Dodge();
 	void CentreMech();
 	void EquipSelection(float Value);
+	void StartScope();
+	void EndScope();
 
 	void PrimaryFire();
 	void PrimaryStopFire();
@@ -288,6 +290,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float PlayerFOV = 100.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float ScopeFOV = 30.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float CameraSensitivity = 1.0f;

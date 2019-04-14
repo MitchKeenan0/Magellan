@@ -9,8 +9,11 @@ ATechActor::ATechActor()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	TechRoot = CreateDefaultSubobject<USceneComponent>(TEXT("TechRoot"));
-	SetRootComponent(TechRoot);
+	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
+	CollisionBox->SetGenerateOverlapEvents(true);
+	//CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABulletActor::OnBulletBeginOverlap);
+	//CollisionBox->OnComponentHit.AddDynamic(this, &ABulletActor::OnBulletHit);
+	SetRootComponent(CollisionBox);
 
 	TechMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TechMesh"));
 	TechMesh->SetupAttachment(RootComponent);
@@ -127,20 +130,22 @@ void ATechActor::UpdateArticulation(float DeltaTime)
 		FRotator TargetRotation = TargetVector.Rotation();
 
 		// Trajectory
-		if ((AmmoType != nullptr) && (MyTechComponent != nullptr))
+		/*if ((AmmoType != nullptr) && (MyTechComponent != nullptr))
 		{
 			float BulletSpeed = MyTechComponent->GetAmmoSpeed();
 			if (BulletSpeed != 0.0f)
 			{
 				float Distance = FVector::Dist(GetActorLocation(), (GetActorLocation() + GetAimPoint()));
-				float gd = (9.0f * Distance);
+				float gd = (420.0f * Distance); /// this is terrible!@
 				float v2 = FMath::Square(BulletSpeed);
-				float theta = 10.0f * FMath::RadiansToDegrees(FMath::FastAsin(gd / v2));
+				float GRV2 = (gd / v2);
+				float theta = 10.0f * (FMath::Asin(GRV2));
+				///float theta = 10.0f * FMath::RadiansToDegrees(FMath::FastAsin(gd / v2));
 
 				TargetRotation.Pitch += theta;
 				///GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, FString::Printf(TEXT("theta: %f"), theta));
 			}
-		}
+		}*/
 
 		// Clamping relative to Torso
 		if (MyMechCharacter->GetTorso() != nullptr)
@@ -197,7 +202,7 @@ void ATechActor::UpdateAimPoint()
 		IgnoredActors.Add(MyMechCharacter);
 	}
 
-	FVector RaycastVector = EmitPoint->GetForwardVector() * 50000.0f;
+	FVector RaycastVector = EmitPoint->GetForwardVector() * 9990000.0f;
 	FVector Start = EmitPoint->GetComponentLocation();
 	FVector End = Start + RaycastVector;
 
@@ -223,6 +228,26 @@ void ATechActor::UpdateAimPoint()
 		//FVector LocalOffset = MyMechCharacter->GetActorLocation();
 		AimPoint = MyMechCharacter->GetLookVector();
 	}
+}
+
+void ATechActor::SetPhysical()
+{
+	CollisionBox->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	CollisionBox->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+	CollisionBox->SetSimulatePhysics(true);
+	CollisionBox->WakeRigidBody();
+
+	FVector Offset = (FMath::VRand() * 100.0f);
+	if (Offset.Z < 0.0f)
+	{
+		Offset.Z *= -1.0f;
+	}
+	FVector PopLocation = GetActorLocation() + Offset;
+	FVector MechSpeed = MyMechCharacter->GetVelocity();
+	CollisionBox->AddImpulse(MechSpeed + (Offset * 100.0f));
+	CollisionBox->AddTorqueInRadians(Offset * 500.0f);
+
+	MyMechCharacter = nullptr;
 }
 
 bool ATechActor::IsEquipped()

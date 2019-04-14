@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "Magellan.h"
 #include "GameFramework/Actor.h"
 #include "TechComponent.h"
 #include "TechActor.generated.h"
@@ -34,6 +34,9 @@ public:
 	void InitTechActor(AMechCharacter* TechOwner);
 
 	UFUNCTION()
+	void SetPhysical();
+
+	UFUNCTION()
 	UTechComponent* GetTechComponent() { return MyTechComponent; }
 
 	UFUNCTION()
@@ -47,6 +50,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FName GetTechName() { return TechName; }
+
+	
 
 protected:
 	// Called when the game starts or when spawned
@@ -63,8 +68,8 @@ protected:
 	UFUNCTION()
 	void UpdateArticulation(float DeltaTime);
 
-	UPROPERTY(EditDefaultsOnly)
-	USceneComponent* TechRoot;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UBoxComponent* CollisionBox;
 
 	UPROPERTY(EditDefaultsOnly)
 	USceneComponent* EmitPoint;

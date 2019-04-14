@@ -94,14 +94,18 @@ void AMechCharacter::DestructMech()
 		TorsoCollider->SetSimulatePhysics(true);
 		TorsoCollider->WakeRigidBody();
 		
-		FVector Offset = (FMath::VRand() * 200.0f);
+		GetMesh()->AddRelativeLocation(FVector(0.0f, 0.0f, -100.0f));
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
+		LegCollider->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
+		
+		FVector Offset = (FMath::VRand() * 100.0f);
 		if (Offset.Z < 0.0f)
 		{
 			Offset.Z *= -1.0f;
 		}
 		FVector PopLocation = GetActorLocation() + Offset;
-		TorsoCollider->AddImpulse(Offset * 1000.0f);
-		TorsoCollider->AddTorque(Offset * 100.0f);
+		TorsoCollider->AddImpulse((LastVelocity * 300.0f) + (Offset * 2500.0f));
+		TorsoCollider->AddTorqueInRadians(Offset * 100.0f);
 	}
 }
 
@@ -174,6 +178,8 @@ void AMechCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("PrimaryFire", IE_Released, this, &AMechCharacter::PrimaryStopFire);
 	PlayerInputComponent->BindAction("Centre", IE_Pressed, this, &AMechCharacter::CentreMech);
 	PlayerInputComponent->BindAction("Dodge", IE_Pressed, this, &AMechCharacter::Dodge);
+	PlayerInputComponent->BindAction("Scope", IE_Pressed, this, &AMechCharacter::StartScope);
+	PlayerInputComponent->BindAction("Scope", IE_Released, this, &AMechCharacter::EndScope);
 
 	// Axes
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMechCharacter::MoveRight);
@@ -349,6 +355,16 @@ void AMechCharacter::CentreMech()
 			}
 		}
 	}
+}
+
+void AMechCharacter::StartScope()
+{
+	CameraComp->FieldOfView = ScopeFOV;
+}
+
+void AMechCharacter::EndScope()
+{
+	CameraComp->FieldOfView = PlayerFOV;
 }
 
 void AMechCharacter::EquipSelection(float Value)
@@ -858,7 +874,7 @@ void AMechCharacter::UpdateBotMovement()
 	FVector ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
 	
 	// Forward move
-	if (ToTarget.Size() >= 50000.0f)
+	if (ToTarget.Size() >= 7000.0f)
 	{
 		float ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
 		if (FMath::Abs(ForwardMoveValue) > 0.25f)
@@ -880,33 +896,44 @@ void AMechCharacter::UpdateBotMovement()
 
 void AMechCharacter::UpdateBotAim(float DeltaTime)
 {
-	FVector ToPlayer = (TargetMech->GetActorLocation() - GetActorLocation());
-	FVector PlayerVelocity = TargetMech->GetCharacterMovement()->Velocity * 0.7f;
-	FVector ToPlayerSpeed = (ToPlayer + PlayerVelocity).GetSafeNormal();
-	FVector ToPlayerSpeedNorm = ToPlayerSpeed.GetSafeNormal();
+	FVector		TargetLocation = TargetMech->GetActorLocation();
+	float		Distance = FVector::Dist(GetActorLocation(), TargetLocation);
+
+	// Above for gravity
+	float DistSqr = FMath::Square(Distance);
+	float UnitScale = 160000.0f;
+	float ValueByDistance = DistSqr * 0.1f;
+	float ExtraForSure = FMath::Sqrt(Distance);
+	float VerticalAddition = (ValueByDistance + ExtraForSure) / UnitScale;
+	TargetLocation.Z += VerticalAddition - 100.0f;
+
+	// Ahead for velocity
+	FVector PlayerVelocity = TargetMech->GetCharacterMovement()->Velocity * 0.3f;
+	float TempScalar = 0.1f * FMath::Sqrt(Distance);
+	TargetLocation += PlayerVelocity * TempScalar * 0.1f;
+
+	// Local offset
+	FVector Locality = 0.618f * (GetEquippedTechActor()->GetActorLocation() - GetActorLocation());
+	TargetLocation -= Locality;
+
 	
-	// Lateral
+	// Lllline em up
+	FVector ToTarget = (TargetLocation - GetActorLocation());
+	FVector ToPlayerSpeed = (ToTarget + PlayerVelocity).GetSafeNormal();
+	FVector ToPlayerSpeedNorm = ToPlayerSpeed.GetSafeNormal();
+
+
+	// Lateral mouse input
 	FVector LateralAim = AimComponent->GetRightVector().GetSafeNormal();
 	float LateralDot = FVector::DotProduct(LateralAim, ToPlayerSpeedNorm);
 	float LateralInput = FMath::Clamp(LateralDot * 10.0f, -50.0f, 50.0f);
 	BotMouseX = FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * 50.0f);
-	
 
-	// Vertical
+
+	// Vertical mouse input
 	FVector VerticalAim = AimComponent->GetUpVector().GetSafeNormal();
 	float VerticalDot = FVector::DotProduct(VerticalAim, ToPlayerSpeedNorm);
 	float VerticalInput = FMath::Clamp((VerticalDot * 10.0f), -50.0f, 50.0f);
-	
-	//// Bullet-drop consideration
-	//float BulletSpeed = GetEquippedTechActor()->GetTechComponent()->GetAmmoSpeed();
-	//if (BulletSpeed != 0.0f)
-	//{
-	//	float Distance = ToPlayer.Size();
-	//	float gd = (27.0f * Distance);
-	//	float v2 = FMath::Square(BulletSpeed);
-	//	float theta = 90.0f - ((0.5f) * FMath::Asin(gd / v2));
-	//}
-
 	BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * 50.0f);
 }
 
