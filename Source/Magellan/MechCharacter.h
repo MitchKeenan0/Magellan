@@ -250,6 +250,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UUserWidget* MyHud;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UParticleSystem* DestructParticles;
+
+	UPROPERTY(BlueprintReadOnly)
+	UParticleSystemComponent* MyDestructParticles;
+
 
 
 	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")

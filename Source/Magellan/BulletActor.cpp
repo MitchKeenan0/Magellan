@@ -89,7 +89,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 
 			// Hacky temp explosion
 			CollisionBox->SetGenerateOverlapEvents(false);
-			MeshComp->SetRelativeScale3D(FVector(5.0f, 1.1f, 1.1f));
+			MeshComp->SetRelativeScale3D(FVector::OneVector * 2.0f);
 			ProjectileMovement->SetVelocityInLocalSpace(FVector::ZeroVector);
 			ProjectileMovement->ProjectileGravityScale = 0.77f;
 			SetLifeSpan(TimeAfterHit);
@@ -99,11 +99,15 @@ void ABulletActor::Collide(AActor* OtherActor)
 				AMechCharacter* HitMech = Cast<AMechCharacter>(OtherActor);
 				if (HitMech != nullptr)
 				{
-					MyMechCharacter->ConfirmHit();
-
-					if (HitMech->IsBot() && (HitMech->GetLifeSpan() == 0.0f))
+					if (HitMech->GetLifeSpan() == 0.0f)									/// hacky temp case for "not dead"
 					{
-						HitMech->DestructMech();
+
+						MyMechCharacter->ConfirmHit();
+
+						if (HitMech->IsBot())
+						{
+							HitMech->DestructMech();
+						}
 					}
 				}
 			}

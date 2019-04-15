@@ -89,6 +89,7 @@ void AMechCharacter::DestructMech()
 			GetController()->Destroy();
 		}
 
+		// Explode & physics
 		TorsoCollider->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 		TorsoCollider->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
 		TorsoCollider->SetSimulatePhysics(true);
@@ -106,6 +107,14 @@ void AMechCharacter::DestructMech()
 		FVector PopLocation = GetActorLocation() + Offset;
 		TorsoCollider->AddImpulse((LastVelocity * 300.0f) + (Offset * 2500.0f));
 		TorsoCollider->AddTorqueInRadians(Offset * 100.0f);
+
+		// Particle fx
+		if (DestructParticles != nullptr)
+		{
+			FVector Location = GetActorLocation();
+			FRotator Rotation = GetActorForwardVector().Rotation();
+			MyDestructParticles = UGameplayStatics::SpawnEmitterAttached(DestructParticles, GetRootComponent(), NAME_None, Location, Rotation, EAttachLocation::KeepWorldPosition, true);
+		}
 	}
 }
 
@@ -810,7 +819,7 @@ void AMechCharacter::UpdateBot()
 
 		UpdateBotMovement();
 
-		if (GetAngleToTarget() < 5.0f)
+		if ((HasLineOfSightTo(TargetMech->GetActorLocation())) && (GetAngleToTarget() < 5.0f))
 		{
 			if ((!bBotTriggerDown) && (FMath::FRandRange(0.0f, 1.0f) > 0.98f))
 			{
@@ -872,8 +881,16 @@ void AMechCharacter::UpdateBotMovement()
 	FVector ToTarget = (TargetLocation - GetActorLocation());
 	FVector ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
 	
+	// Strafing move
+	if (!HasLineOfSightTo(TargetLocation))
+	{
+		float LateralBias = ToTarget.Y;
+		float StrafeMoveValue = FMath::Clamp(LateralBias, -1.0f, 1.0f);
+		MoveRight(StrafeMoveValue);
+	}
+
 	// Forward move
-	if (ToTarget.Size() >= 7000.0f)
+	else if (ToTarget.Size() >= 7000.0f)
 	{
 		float ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
 		if (FMath::Abs(ForwardMoveValue) > 0.25f)
@@ -891,6 +908,8 @@ void AMechCharacter::UpdateBotMovement()
 		MoveTurn(MoveTurnValue);
 		LastMoveLateral = MoveTurnValue;
 	}
+
+	
 }
 
 void AMechCharacter::UpdateBotAim(float DeltaTime)
@@ -914,6 +933,10 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 	// Local offset
 	FVector Locality = 0.618f * (GetEquippedTechActor()->GetActorLocation() - GetActorLocation());
 	TargetLocation -= Locality;
+
+	// Velocity offset
+	FVector MyVelocity = GetCharacterMovement()->Velocity * 0.1f;
+	TargetLocation -= MyVelocity;
 
 	
 	// Lllline em up
