@@ -244,7 +244,7 @@ void ATechActor::SetPhysical()
 	}
 	FVector PopLocation = GetActorLocation() + Offset;
 	FVector MechSpeed = MyMechCharacter->GetVelocity();
-	CollisionBox->AddImpulse(MechSpeed + (Offset * 100.0f));
+	CollisionBox->AddImpulse((MechSpeed * 110.0f) + (Offset * 1000.0f));
 	CollisionBox->AddTorqueInRadians(Offset * 500.0f);
 
 	MyMechCharacter = nullptr;

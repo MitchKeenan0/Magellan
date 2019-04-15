@@ -77,16 +77,16 @@ void AMechCharacter::DestructMech()
 		FVector LastVelocity = GetCharacterMovement()->Velocity;
 		LaunchCharacter(LastVelocity, true, true);
 
+		if (Outfit != nullptr)
+		{
+			Outfit->ClearOutfit();
+		}
+
 		if (bCPU)
 		{
 			StopBotUpdate();
 			SetLifeSpan(3.0f);
 			GetController()->Destroy();
-		}
-
-		if (Outfit != nullptr)
-		{
-			Outfit->ClearOutfit();
 		}
 
 		TorsoCollider->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
@@ -446,18 +446,17 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 		UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetInputMouseDelta(X, Y);
 	}
 	
-	// Set and clamp Aim
+	// Aim rotation
 	FRotator MRotator = FRotator(Y, X, 0.0f) * CameraSensitivity;
 	AimComponent->AddRelativeRotation(MRotator);
 	FRotator AimRotation = AimComponent->GetRelativeTransform().Rotator();
 	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -50.0f, 80.0f);
 	AimComponent->SetRelativeRotation(AimRotation);
 
-	// Interp rotation for torso
+	// Torso rotation
 	FRotator CurrentR = TorsoCollider->GetRelativeTransform().Rotator();
 	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
-	
 	TorsoCollider->SetRelativeRotation(InterpRotator);
 }
 
@@ -804,7 +803,35 @@ void AMechCharacter::ConfirmHit()
 
 void AMechCharacter::UpdateBot()
 {
-	if ((TargetMech == nullptr) || (TargetMech->GetLifeSpan() != 0.0f))
+	if ((TargetMech != nullptr) && (TargetMech->GetLifeSpan() == 0.0f))
+	{
+		float DeltaTime = GetWorld()->DeltaTimeSeconds;
+		UpdateBotAim(DeltaTime);
+
+		UpdateBotMovement();
+
+		if (GetAngleToTarget() < 5.0f)
+		{
+			if ((!bBotTriggerDown) && (FMath::FRandRange(0.0f, 1.0f) > 0.98f))
+			{
+				FVector TargetLocation = TargetMech->GetActorLocation();
+				if (HasLineOfSightTo(TargetLocation))
+				{
+					PrimaryFire();
+					bBotTriggerDown = true;
+				}
+			}
+		}
+		else if (bBotTriggerDown)
+		{
+			if (FMath::FRandRange(0.0f, 1.0f) > 0.9f)
+			{
+				bBotTriggerDown = false;
+				PrimaryStopFire();
+			}
+		}
+	}
+	else
 	{
 		// Player
 		//TargetMech = Cast<AMechCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
@@ -828,39 +855,11 @@ void AMechCharacter::UpdateBot()
 					}
 				}
 			}
-			
+
 			/*for (AActor* Mech : Mechs)
 			{
-				
-			}*/
-		}
-	}
-	else
-	{
-		float DeltaTime = GetWorld()->DeltaTimeSeconds;
-		
-		UpdateBotAim(DeltaTime);
-		UpdateBotMovement();
 
-		if (GetAngleToTarget() < 5.0f)
-		{
-			if ((!bBotTriggerDown) && (FMath::FRandRange(0.0f, 1.0f) > 0.98f))
-			{
-				FVector TargetLocation = TargetMech->GetActorLocation();
-				if (HasLineOfSightTo(TargetLocation))
-				{
-					PrimaryFire();
-					bBotTriggerDown = true;
-				}
-			}
-		}
-		else if (bBotTriggerDown)
-		{
-			if (FMath::FRandRange(0.0f, 1.0f) > 0.9f)
-			{
-				bBotTriggerDown = false;
-				PrimaryStopFire();
-			}
+			}*/
 		}
 	}
 }
