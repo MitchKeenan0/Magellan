@@ -74,6 +74,7 @@ void AMechCharacter::DestructMech()
 {
 	if (GetController() != nullptr)
 	{
+		EndJump();
 		FVector LastVelocity = GetCharacterMovement()->Velocity;
 		LaunchCharacter(LastVelocity, true, true);
 
@@ -82,31 +83,29 @@ void AMechCharacter::DestructMech()
 			Outfit->ClearOutfit();
 		}
 
+		// Explode & physics
+		TorsoCollider->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		TorsoCollider->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+		TorsoCollider->SetSimulatePhysics(true);
+		TorsoCollider->WakeRigidBody();
+		GetMesh()->AddRelativeLocation(FVector(0.0f, 0.0f, -100.0f));
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
+		LegCollider->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
+		FVector Offset = (FMath::VRand() * 100.0f);
+		if (Offset.Z < 0.0f) {
+			Offset.Z *= -1.0f;
+		}
+		FVector PopLocation = GetActorLocation() + Offset;
+		TorsoCollider->AddImpulse((LastVelocity * 300.0f) + (Offset * 2500.0f));
+		TorsoCollider->AddTorqueInRadians(Offset * 100.0f);
+
+		// Kill bot
 		if (bCPU)
 		{
 			StopBotUpdate();
 			SetLifeSpan(3.0f);
 			GetController()->Destroy();
 		}
-
-		// Explode & physics
-		TorsoCollider->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
-		TorsoCollider->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
-		TorsoCollider->SetSimulatePhysics(true);
-		TorsoCollider->WakeRigidBody();
-		
-		GetMesh()->AddRelativeLocation(FVector(0.0f, 0.0f, -100.0f));
-		GetMesh()->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
-		LegCollider->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
-		
-		FVector Offset = (FMath::VRand() * 100.0f);
-		if (Offset.Z < 0.0f)
-		{
-			Offset.Z *= -1.0f;
-		}
-		FVector PopLocation = GetActorLocation() + Offset;
-		TorsoCollider->AddImpulse((LastVelocity * 300.0f) + (Offset * 2500.0f));
-		TorsoCollider->AddTorqueInRadians(Offset * 100.0f);
 
 		// Particle fx
 		if (DestructParticles != nullptr)
@@ -887,6 +886,10 @@ void AMechCharacter::UpdateBotMovement()
 		float LateralBias = ToTarget.Y;
 		float StrafeMoveValue = FMath::Clamp(LateralBias, -1.0f, 1.0f);
 		MoveRight(StrafeMoveValue);
+		if (!GetCharacterMovement()->IsFalling())
+		{
+			StartJump();
+		}
 	}
 
 	// Forward move
@@ -896,6 +899,12 @@ void AMechCharacter::UpdateBotMovement()
 		if (FMath::Abs(ForwardMoveValue) > 0.25f)
 		{
 			MoveForward(ForwardMoveValue);
+		}
+
+		if (GetCharacterMovement()->IsFalling()
+			&& (FMath::FRandRange(0.0f, 1.0f) > 0.97f))
+		{
+			EndJump();
 		}
 	}
 
@@ -927,7 +936,7 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 
 	// Ahead for velocity
 	FVector PlayerVelocity = TargetMech->GetCharacterMovement()->Velocity * 0.3f;
-	float TempScalar = 0.1f * FMath::Sqrt(Distance);
+	float TempScalar = FMath::Clamp(0.1f * FMath::Sqrt(Distance - 50.0f), 0.0001f, 99999.0f);
 	TargetLocation += PlayerVelocity * TempScalar * 0.1f;
 
 	// Local offset
@@ -950,7 +959,6 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 	float LateralDot = FVector::DotProduct(LateralAim, ToPlayerSpeedNorm);
 	float LateralInput = FMath::Clamp(LateralDot * 10.0f, -50.0f, 50.0f);
 	BotMouseX = FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * 50.0f);
-
 
 	// Vertical mouse input
 	FVector VerticalAim = AimComponent->GetUpVector().GetSafeNormal();

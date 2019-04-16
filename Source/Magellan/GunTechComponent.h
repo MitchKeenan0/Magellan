@@ -31,7 +31,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	float MaxSpread = 5.0f;
 
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly)
 	int ShotsBeforeSpread = 1.0f;
 
 private:
