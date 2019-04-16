@@ -89,7 +89,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 
 			// Hacky temp explosion
 			CollisionBox->SetGenerateOverlapEvents(false);
-			MeshComp->SetRelativeScale3D(FVector::OneVector * 2.0f);
+			MeshComp->SetRelativeScale3D(FVector::OneVector * 3.3f);
 			ProjectileMovement->SetVelocityInLocalSpace(FVector::ZeroVector);
 			ProjectileMovement->ProjectileGravityScale = 0.77f;
 			SetLifeSpan(TimeAfterHit);
@@ -118,7 +118,8 @@ void ABulletActor::Collide(AActor* OtherActor)
 
 void ABulletActor::OnBulletBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (!bHit && !OtherActor->ActorHasTag("Ammo")) ///bOverlap && 
+	static const FName NAME_MyFName(TEXT("Ammo"));
+	if (!bHit && !OtherActor->ActorHasTag(NAME_MyFName)) ///bOverlap && 
 	{
 		Collide(OtherActor);
 	}
@@ -126,7 +127,8 @@ void ABulletActor::OnBulletBeginOverlap(UPrimitiveComponent* OverlappedComponent
 
 void ABulletActor::OnBulletHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (!bHit && !OtherActor->ActorHasTag("Ammo")) ///!bOverlap && 
+	static const FName NAME_MyFName(TEXT("Ammo"));
+	if (!bHit && !OtherActor->ActorHasTag(NAME_MyFName)) ///!bOverlap && 
 	{
 		Collide(OtherActor);
 	}

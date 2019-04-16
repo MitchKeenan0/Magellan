@@ -42,7 +42,7 @@ void UMechOutfitComponent::ClearOutfit()
 			if (Tech != nullptr)
 			{
 				Tech->SetPhysical();
-				Tech->SetLifeSpan(1.0f);
+				Tech->SetLifeSpan(3.0f);
 			}
 		}
 

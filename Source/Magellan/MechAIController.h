@@ -26,6 +26,9 @@ protected:
 	UFUNCTION(BlueprintCallable)
 	void InitMechBot(AMechCharacter* Mech);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FString> BotNames;
+
 	UPROPERTY(BlueprintReadOnly)
 	AMechCharacter* MyMechCharacter = nullptr;
 	

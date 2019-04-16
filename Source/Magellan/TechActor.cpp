@@ -219,7 +219,8 @@ void ATechActor::UpdateAimPoint()
 		true,
 		FLinearColor::White, FLinearColor::Red, 0.1f);
 
-	if (HitResult && (!Hit.Actor->ActorHasTag("Ammo")))
+	static const FName NAME_MyFName(TEXT("Ammo"));
+	if (HitResult && (!Hit.Actor->ActorHasTag(NAME_MyFName)))
 	{
 		AimPoint = Hit.ImpactPoint;
 	}

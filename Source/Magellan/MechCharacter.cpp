@@ -49,6 +49,11 @@ AMechCharacter::AMechCharacter()
 	//OnLiftDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
 }
 
+void AMechCharacter::SetMechName(FString Value)
+{
+	MechName = Value;
+}
+
 void AMechCharacter::TestFunction(bool bOn)
 {
 	//GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Delegate Received"));
@@ -77,6 +82,7 @@ void AMechCharacter::DestructMech()
 		EndJump();
 		FVector LastVelocity = GetCharacterMovement()->Velocity;
 		LaunchCharacter(LastVelocity, true, true);
+		GetCharacterMovement()->GroundFriction *= 5.0f;
 
 		if (Outfit != nullptr)
 		{
@@ -215,11 +221,11 @@ void AMechCharacter::MoveForward(float Value)
 	{
 		float LegsAngle = GetLegsToTorsoAngle();
 		float AlignSpeed = FMath::Abs(LegsAngle) * 0.01f;
-		if (LegsAngle < -5.0f)
+		if (LegsAngle < -1.0f)
 		{
 			MoveTurn(AlignSpeed);
 		}
-		else if (LegsAngle > 5.0f)
+		else if (LegsAngle > 1.0f)
 		{
 			MoveTurn(-AlignSpeed);
 		}
@@ -458,7 +464,7 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	FRotator MRotator = FRotator(Y, X, 0.0f) * CameraSensitivity;
 	AimComponent->AddRelativeRotation(MRotator);
 	FRotator AimRotation = AimComponent->GetRelativeTransform().Rotator();
-	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -50.0f, 80.0f);
+	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -70.0f, 80.0f);
 	AimComponent->SetRelativeRotation(AimRotation);
 
 	// Torso rotation
@@ -621,7 +627,8 @@ FVector AMechCharacter::GetLookVector()
 		true,
 		FLinearColor::Red, FLinearColor::Red, 5.0f);
 
-	if (HitResult && !(Hit.Actor->ActorHasTag("Ammo")))
+	static const FName NAME_MyFName(TEXT("Ammo"));
+	if (HitResult && !(Hit.Actor->ActorHasTag(NAME_MyFName)))
 	{
 		Result = Hit.ImpactPoint;
 	}
@@ -802,6 +809,10 @@ void AMechCharacter::ConfirmHit()
 	if (bCPU)
 	{
 		TargetMech = nullptr;
+		if (bBotTriggerDown)
+		{
+			PrimaryStopFire();
+		}
 	}
 	else if (OnHitDelegate.IsBound())
 	{
@@ -820,7 +831,7 @@ void AMechCharacter::UpdateBot()
 
 		if ((HasLineOfSightTo(TargetMech->GetActorLocation())) && (GetAngleToTarget() < 5.0f))
 		{
-			if ((!bBotTriggerDown) && (FMath::FRandRange(0.0f, 1.0f) > 0.98f))
+			if (!bBotTriggerDown)
 			{
 				FVector TargetLocation = TargetMech->GetActorLocation();
 				if (HasLineOfSightTo(TargetLocation))
@@ -936,12 +947,8 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 
 	// Ahead for velocity
 	FVector PlayerVelocity = TargetMech->GetCharacterMovement()->Velocity * 0.3f;
-	float TempScalar = FMath::Clamp(0.1f * FMath::Sqrt(Distance - 50.0f), 0.0001f, 99999.0f);
+	float TempScalar = FMath::Clamp(0.1f * FMath::Sqrt(Distance - 150.0f), 0.0001f, 99999.0f);
 	TargetLocation += PlayerVelocity * TempScalar * 0.1f;
-
-	// Local offset
-	FVector Locality = 0.618f * (GetEquippedTechActor()->GetActorLocation() - GetActorLocation());
-	TargetLocation -= Locality;
 
 	// Velocity offset
 	FVector MyVelocity = GetCharacterMovement()->Velocity * 0.1f;

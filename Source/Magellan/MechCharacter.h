@@ -135,6 +135,12 @@ public:
 	UFUNCTION()
 	void UpdateBotAim(float DeltaTime);
 
+	UFUNCTION(BlueprintCallable)
+	FString GetMechName() { return MechName; }
+
+	UFUNCTION(BlueprintCallable)
+	void SetMechName(FString Value);
+
 
 	UFUNCTION()
 	void TestFunction(bool bOn);
@@ -339,7 +345,7 @@ private:
 	bool bBotTriggerDown = false;
 
 	UPROPERTY()
-	bool bBraking;
+	bool bBraking = false;
 
 	UPROPERTY()
 	float LastMoveForward = 0.0f;
@@ -358,6 +364,9 @@ private:
 
 	UPROPERTY()
 	AMechCharacter* TargetMech = nullptr;
+
+	UPROPERTY()
+	FString MechName = " ";
 
 	UPROPERTY()
 	TArray<FOutputDraw> OutputDraws;

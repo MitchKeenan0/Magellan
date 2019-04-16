@@ -33,5 +33,14 @@ void AMechAIController::InitMechBot(AMechCharacter* Mech)
 		MyMechCharacter->StartBotUpdate();
 
 		SetControlRotation(MyMechCharacter->GetActorRotation());
+
+		// Name
+		int NumPotentialNames = BotNames.Num();
+		if (NumPotentialNames > 0)
+		{
+			int Select = FMath::FloorToInt(FMath::FRandRange(0.0f, NumPotentialNames));
+			FString NewHandle = BotNames[Select];
+			MyMechCharacter->SetMechName(NewHandle);
+		}
 	}
 }
