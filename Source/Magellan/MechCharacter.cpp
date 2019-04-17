@@ -736,9 +736,9 @@ void AMechCharacter::InitOptions()
 
 		for (int i = 0; i < numTechs; ++i)
 		{
-			ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[i], SpawnInfo);
-			if (NewTech != nullptr)
+			if (AvailableTech[i] != nullptr)
 			{
+				ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[i], SpawnInfo);
 				AvailableTechPointers.Add(NewTech);
 				BuildTech(i, i);
 			}
@@ -994,7 +994,7 @@ bool AMechCharacter::HasLineOfSightTo(FVector Location)
 	if (TargetMech != nullptr)
 	{
 		FHitResult Hit;
-		FVector LineStart = TorsoCollider->GetComponentLocation() + (AimComponent->GetForwardVector() * 110.0f);
+		FVector LineStart = TorsoCollider->GetComponentLocation() + (AimComponent->GetForwardVector() * 500.0f);
 		bool Linecast = GetWorld()->LineTraceSingleByChannel(
 			Hit, 
 			LineStart,

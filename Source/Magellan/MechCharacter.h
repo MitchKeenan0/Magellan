@@ -5,6 +5,7 @@
 #include "Magellan.h"
 #include "GameFramework/Character.h"
 #include "TechActor.h"
+#include "PlayerIDWidgetComponent.h"
 #include "MechOutfitComponent.h"
 ///#include "PaperSpriteComponent.h"
 #include "MechCharacter.generated.h"
@@ -247,6 +248,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UCameraComponent* CameraComp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Name")
+	UPlayerIDWidgetComponent* PlayerIDComp;
+	
 
 	// Reference UMG Asset in the Editor
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
