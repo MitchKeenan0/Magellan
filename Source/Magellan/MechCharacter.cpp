@@ -67,6 +67,9 @@ void AMechCharacter::BeginPlay()
 	GetCharacterMovement()->MaxWalkSpeed = TopSpeed;
 
 	EquipSelection(-1.0f);
+
+	// Timer for update
+	GetWorld()->GetTimerManager().SetTimer(PlayerUpdateTimer, this, &AMechCharacter::UpdatePlayer, PlayerUpdateRate, true, 0.2f);
 }
 
 void AMechCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -162,19 +165,23 @@ void AMechCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UpdateAim(DeltaTime);
+	TelemetryTimer += DeltaTime;
+}
+
+void AMechCharacter::UpdatePlayer()
+{
 	if ((Controller != nullptr) && (Controller->IsLocalController()))
 	{
+		float DeltaTime = GetWorld()->DeltaTimeSeconds;
+		
 		UpdateLean(DeltaTime);
 		UpdateTorso(DeltaTime);
-		
+
 		if (!bCPU)
 		{
 			UpdateTelemetry(DeltaTime);
 		}
-		/*else /// replaced with timer
-		{
-			UpdateBot(DeltaTime);
-		}*/
 	}
 }
 
@@ -444,7 +451,7 @@ ATechActor* AMechCharacter::GetEquippedTechActor()
 	return Result;
 }
 
-void AMechCharacter::UpdateTorso(float DeltaTime)
+void AMechCharacter::UpdateAim(float DeltaTime)
 {
 	// Get Mouse inputs
 	float X;
@@ -459,18 +466,25 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	{
 		UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetInputMouseDelta(X, Y);
 	}
-	
+
 	// Aim rotation
 	FRotator MRotator = FRotator(Y, X, 0.0f) * CameraSensitivity;
 	AimComponent->AddRelativeRotation(MRotator);
 	FRotator AimRotation = AimComponent->GetRelativeTransform().Rotator();
+	FRotator Current = AimComponent->GetRelativeTransform().Rotator();
+	AimRotation = FMath::RInterpTo(Current, AimRotation, DeltaTime, CameraSensitivity * 10.0f);
 	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -70.0f, 80.0f);
+	
 	AimComponent->SetRelativeRotation(AimRotation);
+}
 
-	// Torso rotation
+void AMechCharacter::UpdateTorso(float DeltaTime)
+{
+	FRotator AimRotation = AimComponent->GetRelativeTransform().Rotator();
 	FRotator CurrentR = TorsoCollider->GetRelativeTransform().Rotator();
 	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
+	
 	TorsoCollider->SetRelativeRotation(InterpRotator);
 }
 
@@ -533,10 +547,6 @@ void AMechCharacter::UpdateTelemetry(float DeltaTime)
 			bool bAirborne = (Altitude > 5.0f); /// GetCharacterMovement()->IsFalling();
 			OnTelemetryDelegate.Broadcast(bAirborne, Velocity, Altitude);
 		}
-	}
-	else
-	{
-		TelemetryTimer += DeltaTime;
 	}
 }
 
@@ -825,8 +835,8 @@ void AMechCharacter::UpdateBot()
 	if ((TargetMech != nullptr) && (TargetMech->GetLifeSpan() == 0.0f))
 	{
 		float DeltaTime = GetWorld()->DeltaTimeSeconds;
+		
 		UpdateBotAim(DeltaTime);
-
 		UpdateBotMovement();
 
 		if ((HasLineOfSightTo(TargetMech->GetActorLocation())) && (GetAngleToTarget() < 5.0f))
@@ -928,8 +938,6 @@ void AMechCharacter::UpdateBotMovement()
 		MoveTurn(MoveTurnValue);
 		LastMoveLateral = MoveTurnValue;
 	}
-
-	
 }
 
 void AMechCharacter::UpdateBotAim(float DeltaTime)

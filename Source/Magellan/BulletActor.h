@@ -23,10 +23,16 @@ public:
 	UFUNCTION()
 	void InitBullet(UTechComponent* Shooter);
 
+	UFUNCTION()
+	void LaunchBullet();
+
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UPROPERTY(BlueprintReadOnly)
+	FTimerHandle LaunchTimer;
 
 	void Collide(AActor* OtherActor);
 
@@ -85,10 +91,7 @@ protected:
 	);
 	
 
-private:	
-	UPROPERTY()
-	bool bLit = false;
-
+private:
 	UPROPERTY()
 	bool bHit = false;
 

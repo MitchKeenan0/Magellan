@@ -14,10 +14,6 @@ void AMechAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	/*UpdateLean(DeltaTime);
-	UpdateTorso(DeltaTime);
-
-	UpdateTelemetry(DeltaTime);*/
 }
 
 void AMechAIController::InitMechBot(AMechCharacter* Mech)

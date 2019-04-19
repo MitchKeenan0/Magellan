@@ -55,7 +55,8 @@ void ATechActor::InitTechActor(AMechCharacter* TechOwner)
 					MyTechComponent->AmmoType = AmmoType;
 				}
 
-				// Set timer for aim point update
+				GetWorld()->GetTimerManager().SetTimer(UpdateTechTimer, this, &ATechActor::UpdateTech, UpdateRate, true, 0.0f);
+				/// called by update tech
 				//GetWorld()->GetTimerManager().SetTimer(AimPointTimer, this, &ATechActor::UpdateAimPoint, 0.01f, true, 0.0f);
 
 				BulletSpeed = MyTechComponent->GetAmmoSpeed();
@@ -69,8 +70,13 @@ void ATechActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ATechActor::UpdateTech()
+{
 	if (MyMechCharacter != nullptr)
 	{
+		float DeltaTime = GetWorld()->DeltaTimeSeconds;
 		if (bArticulated)
 		{
 			UpdateArticulation(DeltaTime);

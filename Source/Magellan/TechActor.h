@@ -57,10 +57,17 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UPROPERTY(BlueprintReadOnly)
+	FTimerHandle UpdateTechTimer;
+
+	UPROPERTY(BlueprintReadOnly)
 	FTimerHandle AimPointTimer;
 
 	UPROPERTY()
 	FVector AimPoint;
+
+	UFUNCTION()
+	void UpdateTech();
 
 	UFUNCTION()
 	void UpdateAimPoint();
@@ -91,6 +98,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FName TechName = FName("");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	float UpdateRate = 0.006f;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AActor> AmmoType;

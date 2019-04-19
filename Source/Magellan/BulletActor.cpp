@@ -43,18 +43,6 @@ void ABulletActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// Init velocity & rotation after muzzleflash
-	if (!bLit && (GetGameTimeSinceCreation() > 0.05f))
-	{
-		ProjectileMovement->Velocity = GetActorForwardVector() * ProjectileSpeed;
-
-		
-		float RScalar = FMath::FRandRange(-1.0f, 1.0f) * RotationSpeed;
-		FRotator Rando = FMath::VRand().Rotation() * RScalar;
-		RotatingMovement->RotationRate = Rando;
-
-		bLit = true;
-	}
 }
 
 
@@ -72,8 +60,20 @@ void ABulletActor::InitBullet(UTechComponent* Shooter)
 			FVector CurrentV = ProjectileMovement->Velocity;
 			FVector NewV = CurrentV + MechVelocity;
 			ProjectileMovement->Velocity += NewV;
+
+			// Launch!
+			GetWorld()->GetTimerManager().SetTimer(LaunchTimer, this, &ABulletActor::LaunchBullet, 0.05f, false, 0.05f);
 		}
 	}
+}
+
+void ABulletActor::LaunchBullet()
+{
+	ProjectileMovement->Velocity += GetActorForwardVector() * ProjectileSpeed;
+
+	float RScalar = FMath::FRandRange(-1.0f, 1.0f) * RotationSpeed;
+	FRotator Rando = FMath::VRand().Rotation() * RScalar;
+	RotatingMovement->RotationRate = Rando;
 }
 
 

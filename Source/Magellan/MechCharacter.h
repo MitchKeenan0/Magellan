@@ -171,6 +171,18 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	FTimerHandle BotUpdateTimer;
 
+	UPROPERTY(BlueprintReadOnly)
+	FTimerHandle PlayerUpdateTimer;
+
+	/*UPROPERTY(BlueprintReadOnly)
+	FTimerHandle BotUpdateTimer;*/
+
+	UFUNCTION()
+	void UpdateAim(float DeltaTime);
+
+	UFUNCTION()
+	void UpdatePlayer();
+
 	UFUNCTION(BlueprintCallable)
 	void UpdateBot();
 
@@ -271,6 +283,9 @@ protected:
 
 	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	UPaperSpriteComponent* ControlPanelSprite;*/
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float PlayerUpdateRate = 0.006f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float MoveSpeed = 100.0f;
