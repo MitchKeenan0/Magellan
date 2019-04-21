@@ -61,13 +61,13 @@ protected:
 	UParticleSystemComponent* ParticleComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	UBoxComponent* CollisionBox;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	UProjectileMovementComponent* ProjectileMovement;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	URotatingMovementComponent* RotatingMovement;
+
+	UFUNCTION()
+	void LineTraceForHit();
 
 	UFUNCTION()
 	void OnBulletBeginOverlap

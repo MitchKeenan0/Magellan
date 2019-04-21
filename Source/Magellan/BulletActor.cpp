@@ -8,15 +8,18 @@ ABulletActor::ABulletActor()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
+	/*CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
 	CollisionBox->SetGenerateOverlapEvents(true);
 	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABulletActor::OnBulletBeginOverlap);
-	CollisionBox->OnComponentHit.AddDynamic(this, &ABulletActor::OnBulletHit);
-	SetRootComponent(CollisionBox);
+	CollisionBox->OnComponentHit.AddDynamic(this, &ABulletActor::OnBulletHit);*/
+	
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
+	MeshComp->SetCollisionObjectType(ECollisionChannel::ECC_EngineTraceChannel1);
+	MeshComp->SetGenerateOverlapEvents(false);
 	MeshComp->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	SetRootComponent(MeshComp);
 	
 	ParticleComp = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ParticleComp"));
 	ParticleComp->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
@@ -43,6 +46,7 @@ void ABulletActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	LineTraceForHit();
 }
 
 
@@ -76,6 +80,47 @@ void ABulletActor::LaunchBullet()
 	RotatingMovement->RotationRate = Rando;
 }
 
+void ABulletActor::LineTraceForHit()
+{
+	bool HitResult = false;
+	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjects;
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_PhysicsBody));
+	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Destructible));
+	FHitResult Hit;
+	TArray<AActor*> IgnoredActors;
+	if (MyMechCharacter != nullptr)
+	{
+		IgnoredActors.Add(MyMechCharacter);
+	}
+
+	float DeltaTime = GetWorld()->DeltaTimeSeconds;
+	FVector RaycastVector = ProjectileMovement->Velocity * DeltaTime;
+	FVector Start = GetActorLocation();
+	FVector End = Start + RaycastVector;
+
+	// Pew pew
+	HitResult = UKismetSystemLibrary::LineTraceSingleForObjects(
+		this,
+		Start,
+		End,
+		TraceObjects,
+		false,
+		IgnoredActors,
+		EDrawDebugTrace::None,
+		Hit,
+		true,
+		FLinearColor::White, FLinearColor::Red, 0.1f);
+
+	static const FName NAME_MyFName(TEXT("Ammo"));
+	if (HitResult && (!Hit.Actor->ActorHasTag(NAME_MyFName)))
+	{
+		Collide(Hit.GetActor());
+	}
+}
+
 
 void ABulletActor::Collide(AActor* OtherActor)
 {
@@ -88,7 +133,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 			bHit = true;
 
 			// Hacky temp explosion
-			CollisionBox->SetGenerateOverlapEvents(false);
+			///CollisionBox->SetGenerateOverlapEvents(false);
 			MeshComp->SetRelativeScale3D(FVector::OneVector * 3.3f);
 			ProjectileMovement->SetVelocityInLocalSpace(FVector::ZeroVector);
 			ProjectileMovement->ProjectileGravityScale = 0.77f;
