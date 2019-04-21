@@ -48,6 +48,9 @@ public:
 	UFUNCTION()
 	FVector GetAimPoint() { return AimPoint; }
 
+	UFUNCTION()
+	bool GetTeamSafetyOn() { return bTeamSafetyOn; }
+
 	UFUNCTION(BlueprintCallable)
 	FName GetTechName() { return TechName; }
 
@@ -133,5 +136,8 @@ public:
 private:
 	UPROPERTY()
 	float BulletSpeed = 0.0f;
+
+	UPROPERTY()
+	bool bTeamSafetyOn = false;
 
 };

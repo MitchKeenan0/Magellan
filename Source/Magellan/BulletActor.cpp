@@ -46,7 +46,10 @@ void ABulletActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	LineTraceForHit();
+	if (!bHit)
+	{
+		LineTraceForHit();
+	}
 }
 
 

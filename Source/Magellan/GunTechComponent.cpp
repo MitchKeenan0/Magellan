@@ -34,7 +34,6 @@ void UGunTechComponent::Fire()
 		if (RunningShotCount >= ShotsBeforeSpread)
 		{
 			float CompoundingError = FMath::Clamp(RunningShotCount * AccuracySpread, 1.0f, MaxSpread);
-			GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, FString::Printf(TEXT("CompoundingError: %f"), CompoundingError));
 			FRotator SimpleMiscalculation = FMath::VRand().Rotation() * (0.01f * CompoundingError);
 			ShotRotation += SimpleMiscalculation;
 		} 

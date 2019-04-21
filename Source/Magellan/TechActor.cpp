@@ -7,7 +7,7 @@
 ATechActor::ATechActor()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
 	CollisionBox->SetGenerateOverlapEvents(true);
@@ -76,9 +76,9 @@ void ATechActor::UpdateTech()
 {
 	if (MyMechCharacter != nullptr)
 	{
-		float DeltaTime = GetWorld()->DeltaTimeSeconds;
 		if (bArticulated)
 		{
+			float DeltaTime = GetWorld()->DeltaTimeSeconds;
 			UpdateArticulation(DeltaTime);
 		}
 
@@ -88,7 +88,7 @@ void ATechActor::UpdateTech()
 
 void ATechActor::ActivateTech()
 {
-	if (MyTechComponent != nullptr)
+	if (!bTeamSafetyOn && (MyTechComponent != nullptr))
 	{
 		if (MyTechComponent->GetCapacity() != 0.0f) /// -1 used by beams
 		{
@@ -226,8 +226,26 @@ void ATechActor::UpdateAimPoint()
 		FLinearColor::White, FLinearColor::Red, 0.1f);
 
 	static const FName NAME_MyFName(TEXT("Ammo"));
-	if (HitResult && (!Hit.Actor->ActorHasTag(NAME_MyFName)))
+	if (HitResult && (!Hit.GetActor()->ActorHasTag(NAME_MyFName)))
 	{
+		AMechCharacter* HitMech = Cast<AMechCharacter>(Hit.GetActor());
+		if (HitMech != nullptr)
+		{
+			if ((HitMech->GetTeam() == MyMechCharacter->GetTeam())
+				&& MyMechCharacter->IsBot())
+			{
+				bTeamSafetyOn = true;
+				DeactivateTech();
+			}
+		}
+		else
+		{
+			if (bTeamSafetyOn)
+			{
+				bTeamSafetyOn = false;
+			}
+		}
+		
 		AimPoint = Hit.ImpactPoint;
 	}
 	else

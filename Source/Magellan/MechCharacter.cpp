@@ -152,7 +152,7 @@ void AMechCharacter::InitMech()
 
 void AMechCharacter::StartBotUpdate()
 {
-	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.2f);
+	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.2f); /// this needs its own value
 }
 void AMechCharacter::StopBotUpdate()
 {
@@ -165,8 +165,11 @@ void AMechCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	UpdateAim(DeltaTime);
-	TelemetryTimer += DeltaTime;
+	if (!bCPU)
+	{
+		UpdateAim(DeltaTime);
+		TelemetryTimer += DeltaTime;
+	}
 }
 
 void AMechCharacter::UpdatePlayer()
@@ -942,6 +945,8 @@ void AMechCharacter::UpdateBotMovement()
 
 void AMechCharacter::UpdateBotAim(float DeltaTime)
 {
+	UpdateAim(DeltaTime);
+
 	FVector		TargetLocation = TargetMech->GetActorLocation();
 	float		Distance = FVector::Dist(GetActorLocation(), TargetLocation);
 
@@ -1001,19 +1006,30 @@ bool AMechCharacter::HasLineOfSightTo(FVector Location)
 
 	if (TargetMech != nullptr)
 	{
-		FHitResult Hit;
-		FVector LineStart = TorsoCollider->GetComponentLocation() + (AimComponent->GetForwardVector() * 500.0f);
-		bool Linecast = GetWorld()->LineTraceSingleByChannel(
-			Hit, 
-			LineStart,
-			Location,
-			ECollisionChannel::ECC_Pawn);
-		if (Linecast)
+		// First check for team safety
+		bool bAimingAtTeammate = GetEquippedTechActor()->GetTeamSafetyOn();
+		if (!bAimingAtTeammate)
 		{
-			if (Hit.Actor == TargetMech)
+
+			// Otherwise go by direct linecast
+			FHitResult Hit;
+			FVector LineStart = TorsoCollider->GetComponentLocation() + (AimComponent->GetForwardVector() * 500.0f);
+			bool Linecast = GetWorld()->LineTraceSingleByChannel(
+				Hit,
+				LineStart,
+				Location,
+				ECollisionChannel::ECC_Pawn);
+			if (Linecast)
 			{
-				Result = true;
+				if (Hit.Actor == TargetMech)
+				{
+					Result = true;
+				}
 			}
+		}
+		else /// aiming at a teammate
+		{
+			Result = false;
 		}
 	}
 
