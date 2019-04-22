@@ -285,7 +285,7 @@ protected:
 	UPaperSpriteComponent* ControlPanelSprite;*/
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
-	float PlayerUpdateRate = 0.006f;
+	float PlayerUpdateRate = 0.01f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float MoveSpeed = 100.0f;
@@ -357,6 +357,9 @@ public:
 private:
 	UPROPERTY()
 	bool bCPU = false;
+
+	UPROPERTY()
+	bool bVisible = false;
 
 	UPROPERTY()
 	int TeamID = 0;

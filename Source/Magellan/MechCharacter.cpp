@@ -69,7 +69,7 @@ void AMechCharacter::BeginPlay()
 	EquipSelection(-1.0f);
 
 	// Timer for update
-	GetWorld()->GetTimerManager().SetTimer(PlayerUpdateTimer, this, &AMechCharacter::UpdatePlayer, PlayerUpdateRate, true, 0.2f);
+	GetWorld()->GetTimerManager().SetTimer(PlayerUpdateTimer, this, &AMechCharacter::UpdatePlayer, PlayerUpdateRate, true, 0.1f);
 }
 
 void AMechCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -152,7 +152,7 @@ void AMechCharacter::InitMech()
 
 void AMechCharacter::StartBotUpdate()
 {
-	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.2f); /// this needs its own value
+	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.01f); /// this needs its own value
 }
 void AMechCharacter::StopBotUpdate()
 {
@@ -893,6 +893,18 @@ void AMechCharacter::UpdateBot()
 
 			}*/
 		}
+	}
+
+	// Occluded bots can update slower
+	if (!TorsoCollider->IsVisible() && bVisible)
+	{
+		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.1f, true, 0.1f); /// this needs its own value
+		bVisible = false;
+	}
+	else if (TorsoCollider->IsVisible() && !bVisible)
+	{
+		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.01f); /// this needs its own value
+		bVisible = true;
 	}
 }
 

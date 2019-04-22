@@ -28,15 +28,19 @@ void UGunTechComponent::Fire()
 	if (Capacity > 0.0f)
 	{
 		FActorSpawnParameters SpawnInfo;
-
-		// Accuracy rotation
 		FRotator ShotRotation = EmitPoint->GetComponentRotation();
-		if (RunningShotCount >= ShotsBeforeSpread)
+
+		// Inaccuracy
+		float TimeSinceLastFire = GetWorld()->TimeSeconds - LastFireTime;
+		float ManualFireRate = (1.0f / RateOfFire) * 2.0f;
+		if ((RunningShotCount >= ShotsBeforeSpread)
+			|| (TimeSinceLastFire <= ManualFireRate))
 		{
 			float CompoundingError = FMath::Clamp(RunningShotCount * AccuracySpread, 1.0f, MaxSpread);
 			FRotator SimpleMiscalculation = FMath::VRand().Rotation() * (0.01f * CompoundingError);
 			ShotRotation += SimpleMiscalculation;
 		} 
+		
 		RunningShotCount += 1;
 
 		// Spawning
@@ -63,7 +67,8 @@ void UGunTechComponent::Fire()
 			}
 		}
 	}
-	else {
+	else /// Out of ammo
+	{
 		DeactivateTechComponent();
 	}
 }
