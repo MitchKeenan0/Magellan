@@ -154,7 +154,15 @@ void AMechCharacter::InitMech()
 
 void AMechCharacter::StartBotUpdate()
 {
-	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.01f); /// this needs its own value
+	// Random equip select
+	int EquipChoice = 0;
+	if (FMath::RandRange(0.0f, 1.0f) > 0.5f)
+	{
+		EquipChoice = 1;
+	}
+	EquipSelection(EquipChoice);
+
+	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.001f, true, 0.01f); /// this needs its own value
 }
 void AMechCharacter::StopBotUpdate()
 {
@@ -175,7 +183,7 @@ void AMechCharacter::Tick(float DeltaTime)
 	}
 	else if (GetLifeSpan() == 0.0f)
 	{
-		UpdateBotMovement();
+		BotMove();
 	}
 }
 
@@ -739,13 +747,7 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 				NewTech->SetActorRelativeRotation(FRotator::ZeroRotator);
 
 				NewTech->InitTechActor(this);
-
-				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::White, TEXT("Spawned Tech"));
 			}
-		}
-		else
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Tech type was null..."));
 		}
 	}
 }
@@ -861,14 +863,14 @@ void AMechCharacter::UpdateBot()
 		float DeltaTime = GetWorld()->DeltaTimeSeconds;
 		
 		UpdateBotAim(DeltaTime);
-		///UpdateBotMovement(); // trying this in tick
+		UpdateBotMovement();
 
 		if (!bBotTriggerDown && (HasLineOfSightTo(TargetMech->GetActorLocation())) && (GetAngleToTarget() < 5.0f))
 		{
 			float RestTime = GetWorld()->TimeSeconds - TimeAtTriggerUp;
 			if (RestTime >= (BotBurstDuration * 1.7f))
 			{
-				FVector TargetLocation = TargetMech->GetActorLocation();
+				TargetLocation = TargetMech->GetActorLocation();
 				if (HasLineOfSightTo(TargetLocation))
 				{
 					PrimaryFire();
@@ -921,12 +923,12 @@ void AMechCharacter::UpdateBot()
 	// Occluded bots can update slower
 	if (!TorsoCollider->IsVisible() && bVisible)
 	{
-		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.1f, true, 0.1f); /// this needs its own value
+		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.1f); /// this needs its own value
 		bVisible = false;
 	}
 	else if (TorsoCollider->IsVisible() && !bVisible)
 	{
-		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.01f); /// this needs its own value
+		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.001f, true, 0.01f); /// this needs its own value
 		bVisible = true;
 	}
 }
@@ -949,16 +951,20 @@ void AMechCharacter::UpdateBotMovement()
 		ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
 		if (FMath::Abs(ForwardMoveValue) > 0.25f)
 		{
-			MoveForward(ForwardMoveValue);
+			
+			BotMoveValueForward = ForwardMoveValue;
+			///MoveForward(ForwardMoveValue);
 		}
 	}
 
 	// Strafing move
 	else if (ToTarget.Size() >= 1000.0f)
 	{
-		LateralBias = ToTarget.Y * GetActorForwardVector().Y;
+		LateralBias = ToTarget.Y + GetActorForwardVector().Y;
 		StrafeMoveValue = FMath::Clamp(LateralBias, -1.0f, 1.0f);
-		MoveRight(StrafeMoveValue);
+		
+		BotMoveValueStrafe = StrafeMoveValue;
+		///MoveRight(StrafeMoveValue);
 	}
 
 	// Jump
@@ -979,39 +985,54 @@ void AMechCharacter::UpdateBotMovement()
 	if (FMath::Abs(DotToTargetRight) > 0.05f)
 	{
 		MoveTurnValue = FMath::Clamp(DotToTargetRight * 100.0f, -1.0f, 1.0f);
-		MoveTurn(MoveTurnValue);
+		
+		BotMoveValueTurn = MoveTurnValue;
+		///MoveTurn(MoveTurnValue);
 		LastMoveLateral = MoveTurnValue;
 	}
+}
+
+void AMechCharacter::BotMove()
+{
+	MoveForward(BotMoveValueForward);
+	MoveRight(BotMoveValueStrafe);
+	MoveTurn(BotMoveValueTurn);
 }
 
 void AMechCharacter::UpdateBotAim(float DeltaTime)
 {
 	UpdateAim(DeltaTime);
 
-	FVector		TargetLocation = TargetMech->GetActorLocation();
-	float		Distance = FVector::Dist(GetActorLocation(), TargetLocation);
+	FVector		TargetAimLocation = TargetMech->GetActorLocation();
+	float		Distance = FVector::Dist(GetActorLocation(), TargetAimLocation);
+	float		LeadFactor = 0.0f;
+	if (GetEquippedTechActor() != nullptr)
+	{
+		LeadFactor = GetEquippedTechActor()->GetAimAheadFactor();
+	}
 
+	// Aim ahead
 	// Above for gravity
 	float DistSqr = FMath::Square(Distance);
 	float UnitScale = 160000.0f;
 	float ValueByDistance = DistSqr * 0.1f;
 	float ExtraForSure = FMath::Sqrt(Distance);
 	float VerticalAddition = (ValueByDistance + ExtraForSure) / UnitScale;
-	TargetLocation.Z += VerticalAddition - 100.0f;
+	TargetAimLocation.Z += LeadFactor * (VerticalAddition - 100.0f);
 
 	// Ahead for velocity
 	FVector PlayerVelocity = TargetMech->GetCharacterMovement()->Velocity * 0.3f;
 	float TempScalar = FMath::Clamp(0.1f * FMath::Sqrt(Distance - 150.0f), 0.0001f, 99999.0f);
-	TargetLocation += PlayerVelocity * TempScalar * 0.1f;
+	TargetAimLocation += LeadFactor * (PlayerVelocity * TempScalar * 0.1f);
 
 	// Velocity offset
 	FVector MyVelocity = GetCharacterMovement()->Velocity * 0.1f;
-	TargetLocation -= MyVelocity;
+	TargetAimLocation -= (LeadFactor * MyVelocity);
 
 	
 	// Lllline em up
-	FVector ToTarget = (TargetLocation - GetActorLocation());
-	FVector ToPlayerSpeed = (ToTarget + PlayerVelocity).GetSafeNormal();
+	FVector AimToTarget = (TargetAimLocation - GetActorLocation());
+	FVector ToPlayerSpeed = (AimToTarget + (PlayerVelocity * LeadFactor)).GetSafeNormal();
 	FVector ToPlayerSpeedNorm = ToPlayerSpeed.GetSafeNormal();
 
 
@@ -1019,13 +1040,13 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 	FVector LateralAim = AimComponent->GetRightVector().GetSafeNormal();
 	float LateralDot = FVector::DotProduct(LateralAim, ToPlayerSpeedNorm);
 	float LateralInput = FMath::Clamp(LateralDot * 10.0f, -50.0f, 50.0f);
-	BotMouseX = FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * 50.0f);
+	BotMouseX = FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * 10.0f);
 
 	// Vertical mouse input
 	FVector VerticalAim = AimComponent->GetUpVector().GetSafeNormal();
 	float VerticalDot = FVector::DotProduct(VerticalAim, ToPlayerSpeedNorm);
 	float VerticalInput = FMath::Clamp((VerticalDot * 10.0f), -50.0f, 50.0f);
-	BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * 50.0f);
+	BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * 10.0f);
 }
 
 float AMechCharacter::GetAngleToTarget()

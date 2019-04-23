@@ -7,8 +7,8 @@
 #include "ParticleHelper.h"
 #include "Particles/ParticleSystem.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "MechCharacter.h"
 #include "BeamTechComponent.generated.h"
-
 /**
  * 
  */
@@ -22,12 +22,30 @@ public:
 	virtual void DeactivateTechComponent() override;
 
 protected:
+	UPROPERTY(EditDefaultsOnly)
+	float RaycastRate = 0.01f;
+
+	UPROPERTY(EditDefaultsOnly)
+	float RaycastRange = 55000.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+	UParticleSystem* MyImpactParticles;
+
+	UPROPERTY()
+	FTimerHandle RaycastTimer;
+
 	UFUNCTION()
 	void StartFire();
 
 	UFUNCTION()
 	void StopFire();
 
+	UFUNCTION()
+	void RaycastForHit();
+
 	UPROPERTY(BlueprintReadOnly)
 	UParticleSystemComponent* ActiveParticles;
+
+	UPROPERTY(BlueprintReadOnly)
+	UParticleSystemComponent* ImpactParticles;
 };

@@ -65,7 +65,7 @@ void UTechComponent::DeactivateTechComponent()
 void UTechComponent::ShakeCamera()
 {
 	APlayerController* MyController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	if ((MyController != nullptr) && (MyMechCharacter != nullptr))
+	if ((MyController != nullptr) && (MyMechCharacter != nullptr) && !MyMechCharacter->IsBot())
 	{
 		if (CameraShakeOnActivate != nullptr)
 		{

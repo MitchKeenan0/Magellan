@@ -48,6 +48,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly)
 	float TimeAfterHit = 0.1f;
 
+	UPROPERTY(EditDefaultsOnly)
+	float DetonationSize = 3.3f;
+
 	UPROPERTY(BlueprintReadOnly)
 	UTechComponent* MyTechComponent;
 

@@ -134,6 +134,9 @@ public:
 	void UpdateBotMovement();
 
 	UFUNCTION()
+	void BotMove();
+
+	UFUNCTION()
 	void UpdateBotAim(float DeltaTime);
 
 	UFUNCTION(BlueprintCallable)
@@ -363,6 +366,15 @@ private:
 
 	UPROPERTY()
 	int TeamID = 0;
+
+	UPROPERTY()
+	float BotMoveValueForward = 0.0f;
+
+	UPROPERTY()
+	float BotMoveValueStrafe = 0.0f;
+
+	UPROPERTY()
+	float BotMoveValueTurn = 0.0f;
 
 	UPROPERTY()
 	bool bBotTriggerDown = false;

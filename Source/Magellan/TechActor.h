@@ -51,6 +51,9 @@ public:
 	UFUNCTION()
 	bool GetTeamSafetyOn() { return bTeamSafetyOn; }
 
+	UFUNCTION()
+	float GetAimAheadFactor() { return AimAheadFactor; }
+
 	UFUNCTION(BlueprintCallable)
 	FName GetTechName() { return TechName; }
 
@@ -122,6 +125,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	float ArticulationYaw = 20.0f;
+
+	UPROPERTY(EditDefaultsOnly)
+	float AimAheadFactor = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly)
 	float Capacity = 100.0f;
