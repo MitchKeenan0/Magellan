@@ -368,6 +368,15 @@ private:
 	bool bBotTriggerDown = false;
 
 	UPROPERTY()
+	float TimeAtTriggerDown = 0.0f;
+
+	UPROPERTY()
+	float TimeAtTriggerUp = 0.0f;
+
+	UPROPERTY()
+	float BotBurstDuration = 1.0f;
+
+	UPROPERTY()
 	bool bBraking = false;
 
 	UPROPERTY()
@@ -393,5 +402,35 @@ private:
 
 	UPROPERTY()
 	TArray<FOutputDraw> OutputDraws;
+
+	UPROPERTY()
+	FVector Flat = FVector(1.0f, 1.0f, 0.0f);
+
+	UPROPERTY()
+	FVector TargetLocation = FVector::ZeroVector;
+
+	UPROPERTY()
+	FVector ToTarget = FVector::ZeroVector;
+
+	UPROPERTY()
+	FVector ToTargetNorm = FVector::ZeroVector;
+
+	UPROPERTY()
+	FVector ToHeadingRight = FVector::ZeroVector;
+
+	UPROPERTY()
+	float ForwardMoveValue = 0.0f;
+
+	UPROPERTY()
+	float LateralBias = 0.0f;
+
+	UPROPERTY()
+	float StrafeMoveValue = 0.0f;
+
+	UPROPERTY()
+	float DotToTargetRight = 0.0f;
+
+	UPROPERTY()
+	float MoveTurnValue = 0.0f;
 
 };

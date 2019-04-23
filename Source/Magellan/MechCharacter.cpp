@@ -44,9 +44,11 @@ AMechCharacter::AMechCharacter()
 
 	bUseControllerRotationYaw = false;
 
-	//OnBrakeDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
-	//OnDodgeDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
-	//OnLiftDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
+	OnBrakeDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
+	OnDodgeDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
+	OnLiftDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
+	//OnTelemetryDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
+	//OnHitDelegate.AddDynamic(this, &AMechCharacter::TestFunction);
 }
 
 void AMechCharacter::SetMechName(FString Value)
@@ -165,10 +167,15 @@ void AMechCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// These need the smoothest of values ;p
 	if (!bCPU)
 	{
 		UpdateAim(DeltaTime);
 		TelemetryTimer += DeltaTime;
+	}
+	else if (GetLifeSpan() == 0.0f)
+	{
+		UpdateBotMovement();
 	}
 }
 
@@ -246,7 +253,7 @@ void AMechCharacter::MoveTurn(float Value)
 	AddMovementInput(GetMesh()->GetRightVector(), Value * MoveSpeed * LateralMoveScalar * 0.0001f);
 	
 	FRotator NewRotation = GetActorRotation();
-	NewRotation.Yaw += (Value * GetWorld()->DeltaTimeSeconds * TurnSpeed);
+	NewRotation.Yaw += (Value * TurnSpeed);
 
 	// Turning and Aim counter-rotation
 	FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), NewRotation, GetWorld()->DeltaTimeSeconds, TurnSpeed);
@@ -732,7 +739,13 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 				NewTech->SetActorRelativeRotation(FRotator::ZeroRotator);
 
 				NewTech->InitTechActor(this);
+
+				GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::White, TEXT("Spawned Tech"));
 			}
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, TEXT("Tech type was null..."));
 		}
 	}
 }
@@ -743,6 +756,7 @@ void AMechCharacter::InitOptions()
 	if (numTechs > 0)
 	{
 		Outfit->HardpointTechs.Init(nullptr, numTechs);
+		//AvailableTechPointers.Init(nullptr, numTechs);
 
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -752,8 +766,15 @@ void AMechCharacter::InitOptions()
 			if (AvailableTech[i] != nullptr)
 			{
 				ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[i], SpawnInfo);
-				AvailableTechPointers.Add(NewTech);
-				BuildTech(i, i);
+				if (NewTech != nullptr)
+				{
+					AvailableTechPointers.Insert(NewTech, i);
+
+					if (i < 2) /// Replace 2 with actual Hardpoints
+					{
+						BuildTech(i, i);
+					}
+				}
 			}
 		}
 	}
@@ -770,7 +791,7 @@ TArray<ATechActor*> AMechCharacter::GetBuilderTechByTag(FName Tag)
 		for (int i = 0; i < numTechPtrs; ++i)
 		{
 			ATechActor* ThisTech = AvailableTechPointers[i];
-			if (ThisTech->ActorHasTag(Tag))
+			if ((ThisTech != nullptr) && ThisTech->ActorHasTag(Tag))
 			{
 				Result.Add(AvailableTechPointers[i]);
 			}
@@ -840,34 +861,38 @@ void AMechCharacter::UpdateBot()
 		float DeltaTime = GetWorld()->DeltaTimeSeconds;
 		
 		UpdateBotAim(DeltaTime);
-		UpdateBotMovement();
+		///UpdateBotMovement(); // trying this in tick
 
-		if ((HasLineOfSightTo(TargetMech->GetActorLocation())) && (GetAngleToTarget() < 5.0f))
+		if (!bBotTriggerDown && (HasLineOfSightTo(TargetMech->GetActorLocation())) && (GetAngleToTarget() < 5.0f))
 		{
-			if (!bBotTriggerDown)
+			float RestTime = GetWorld()->TimeSeconds - TimeAtTriggerUp;
+			if (RestTime >= (BotBurstDuration * 1.7f))
 			{
 				FVector TargetLocation = TargetMech->GetActorLocation();
 				if (HasLineOfSightTo(TargetLocation))
 				{
 					PrimaryFire();
 					bBotTriggerDown = true;
+					TimeAtTriggerDown = GetWorld()->TimeSeconds;
+					BotBurstDuration = FMath::FRandRange(0.2f, 2.0f);
 				}
 			}
 		}
-		else if (bBotTriggerDown)
+		
+		if (bBotTriggerDown)
 		{
-			if (FMath::FRandRange(0.0f, 1.0f) > 0.9f)
+			float BurstTime = GetWorld()->TimeSeconds - TimeAtTriggerDown;
+			if (BurstTime >= BotBurstDuration)
 			{
 				bBotTriggerDown = false;
 				PrimaryStopFire();
+				TimeAtTriggerUp = GetWorld()->TimeSeconds;
 			}
 		}
 	}
 	else
 	{
-		// Player
-		//TargetMech = Cast<AMechCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
-
+		// Get target
 		TArray<AActor*> Mechs;
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMechCharacter::StaticClass(), Mechs);
 		int MechNum = Mechs.Num();
@@ -887,12 +912,10 @@ void AMechCharacter::UpdateBot()
 					}
 				}
 			}
-
-			/*for (AActor* Mech : Mechs)
-			{
-
-			}*/
 		}
+		
+		// unused- Get Player
+		//TargetMech = Cast<AMechCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 	}
 
 	// Occluded bots can update slower
@@ -910,46 +933,52 @@ void AMechCharacter::UpdateBot()
 
 void AMechCharacter::UpdateBotMovement()
 {
-	// Rotation ingredients yummy
-	FVector Flat = FVector(1.0f, 1.0f, 0.0f);
-	FVector TargetLocation = TargetMech->GetActorLocation(); /// needs better "target location"
-	FVector ToTarget = (TargetLocation - GetActorLocation());
-	FVector ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
-	
-	// Strafing move
-	if (!HasLineOfSightTo(TargetLocation))
+	// Rotation ingredients
+	Flat = FVector(1.0f, 1.0f, 0.0f);
+	TargetLocation = GetActorForwardVector();
+	if (TargetMech != nullptr)
 	{
-		float LateralBias = ToTarget.Y;
-		float StrafeMoveValue = FMath::Clamp(LateralBias, -1.0f, 1.0f);
-		MoveRight(StrafeMoveValue);
-		if (!GetCharacterMovement()->IsFalling())
-		{
-			StartJump();
-		}
+		TargetLocation = TargetMech->GetActorLocation();
 	}
-
+	ToTarget = (TargetLocation - GetActorLocation());
+	ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
+	
 	// Forward move
-	else if (ToTarget.Size() >= 7000.0f)
+	if (HasLineOfSightTo(TargetLocation))
 	{
-		float ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
+		ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
 		if (FMath::Abs(ForwardMoveValue) > 0.25f)
 		{
 			MoveForward(ForwardMoveValue);
 		}
+	}
 
-		if (GetCharacterMovement()->IsFalling()
-			&& (FMath::FRandRange(0.0f, 1.0f) > 0.97f))
-		{
-			EndJump();
-		}
+	// Strafing move
+	else if (ToTarget.Size() >= 1000.0f)
+	{
+		LateralBias = ToTarget.Y * GetActorForwardVector().Y;
+		StrafeMoveValue = FMath::Clamp(LateralBias, -1.0f, 1.0f);
+		MoveRight(StrafeMoveValue);
+	}
+
+	// Jump
+	if (!GetCharacterMovement()->IsFalling()
+		&& (FMath::FRandRange(0.0f, 1.0f) > 0.9f))
+	{
+		StartJump();
+	}
+	else if (GetCharacterMovement()->IsFalling()
+		&& (FMath::FRandRange(0.0f, 1.0f) > 0.99f))
+	{
+		EndJump();
 	}
 
 	// Turning move
-	FVector ToHeadingRight = (GetActorRightVector() * Flat).GetSafeNormal();
-	float DotToTargetRight = FVector::DotProduct(ToHeadingRight, ToTargetNorm);
+	ToHeadingRight = (GetActorRightVector() * Flat).GetSafeNormal();
+	DotToTargetRight = FVector::DotProduct(ToHeadingRight, ToTargetNorm);
 	if (FMath::Abs(DotToTargetRight) > 0.05f)
 	{
-		float MoveTurnValue = FMath::Clamp(DotToTargetRight * 100.0f, -1.0f, 1.0f);
+		MoveTurnValue = FMath::Clamp(DotToTargetRight * 100.0f, -1.0f, 1.0f);
 		MoveTurn(MoveTurnValue);
 		LastMoveLateral = MoveTurnValue;
 	}
@@ -1019,17 +1048,22 @@ bool AMechCharacter::HasLineOfSightTo(FVector Location)
 	if (TargetMech != nullptr)
 	{
 		// First check for team safety
-		bool bAimingAtTeammate = GetEquippedTechActor()->GetTeamSafetyOn();
+		bool bAimingAtTeammate = false;
+		if (GetEquippedTechActor() != nullptr)
+		{
+			bAimingAtTeammate = GetEquippedTechActor()->GetTeamSafetyOn();
+		}
 		if (!bAimingAtTeammate)
 		{
 
 			// Otherwise go by direct linecast
 			FHitResult Hit;
 			FVector LineStart = TorsoCollider->GetComponentLocation() + (AimComponent->GetForwardVector() * 500.0f);
+			FVector LineEnd = Location;
 			bool Linecast = GetWorld()->LineTraceSingleByChannel(
 				Hit,
 				LineStart,
-				Location,
+				LineEnd,
 				ECollisionChannel::ECC_Pawn);
 			if (Linecast)
 			{
@@ -1038,10 +1072,6 @@ bool AMechCharacter::HasLineOfSightTo(FVector Location)
 					Result = true;
 				}
 			}
-		}
-		else /// aiming at a teammate
-		{
-			Result = false;
 		}
 	}
 
