@@ -82,31 +82,70 @@ void AMechCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AMechCharacter::DestructMech()
 {
-	if (GetController() != nullptr)
+	if ((GetController() != nullptr) && !bDead)
 	{
+		// Player death
+		if (!bCPU)
+		{
+			SpringArmComp->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+			
+			if (MyHud != nullptr)
+			{
+				MyHud->RemoveFromViewport();
+				MyHud->Destruct();
+				MyHud = nullptr;
+			}
+
+			APlayerController* MyPlayerController = Cast<APlayerController>(GetController());
+			if (MyPlayerController != nullptr)
+			{
+				MyPlayerController->SetInputMode(FInputModeUIOnly());
+				MyPlayerController->bShowMouseCursor = true;
+
+				// Death screen
+				if (DeathWidgetClass != nullptr)
+				{
+					MyDeathScreen = CreateWidget<UUserWidget>(MyPlayerController, DeathWidgetClass);
+					if (MyDeathScreen)
+					{
+						MyDeathScreen->AddToViewport();
+						MyDeathScreen->SetOwningPlayer(MyPlayerController);
+					}
+				}
+			}
+		}
+
+		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+		bDead = true;
+
+		// "Terminal velocity"
 		EndJump();
 		FVector LastVelocity = GetCharacterMovement()->Velocity;
 		LaunchCharacter(LastVelocity, true, true);
 		GetCharacterMovement()->GroundFriction *= 5.0f;
 
+		// Break up components
 		if (Outfit != nullptr)
 		{
 			Outfit->ClearOutfit();
 		}
 
 		// Explode & physics
+		SpringArmComp->bEnableCameraRotationLag = true;
+		SpringArmComp->CameraRotationLagSpeed *= 0.1f;
 		TorsoCollider->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 		TorsoCollider->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
 		TorsoCollider->SetSimulatePhysics(true);
 		TorsoCollider->WakeRigidBody();
 		GetMesh()->AddRelativeLocation(FVector(0.0f, 0.0f, -100.0f));
 		GetMesh()->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
+		
 		LegCollider->SetCollisionEnabled(ECollisionEnabled::Type::QueryOnly);
 		FVector Offset = (FMath::VRand() * 100.0f);
 		if (Offset.Z < 0.0f) {
 			Offset.Z *= -1.0f;
 		}
-		FVector PopLocation = GetActorLocation() + Offset;
+
 		TorsoCollider->AddImpulse((LastVelocity * 300.0f) + (Offset * 2500.0f));
 		TorsoCollider->AddTorqueInRadians(Offset * 100.0f);
 
@@ -175,18 +214,21 @@ void AMechCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// These need the smoothest of values ;p
-	UpdateLean(DeltaTime);
-	UpdateTorso(DeltaTime);
+	if (!bDead)
+	{
+		// These need the smoothest of values ;p
+		UpdateLean(DeltaTime);
+		UpdateTorso(DeltaTime);
 
-	if (!bCPU)
-	{
-		UpdateAim(DeltaTime);
-		TelemetryTimer += DeltaTime;
-	}
-	else if (GetLifeSpan() == 0.0f)
-	{
-		BotMove();
+		if (!bCPU)
+		{
+			UpdateAim(DeltaTime);
+			TelemetryTimer += DeltaTime;
+		}
+		else
+		{
+			BotMove();
+		}
 	}
 }
 
@@ -904,7 +946,7 @@ void AMechCharacter::UpdateBot()
 			if (MechC != nullptr)
 			{
 				// Check target is valid
-				if ((MechC != this) && (MechC->GetLifeSpan() == 0.0f))
+				if ((MechC != this) && !MechC->IsDead())
 				{
 					// Check team
 					if (MechC->GetTeam() != TeamID)
@@ -1038,13 +1080,13 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 	FVector LateralAim = AimComponent->GetRightVector().GetSafeNormal();
 	float LateralDot = FVector::DotProduct(LateralAim, ToPlayerSpeedNorm);
 	float LateralInput = FMath::Clamp(LateralDot * 10.0f, -50.0f, 50.0f);
-	BotMouseX = FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * 10.0f);
+	BotMouseX = FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * 25.0f);
 
 	// Vertical mouse input
 	FVector VerticalAim = AimComponent->GetUpVector().GetSafeNormal();
 	float VerticalDot = FVector::DotProduct(VerticalAim, ToPlayerSpeedNorm);
 	float VerticalInput = FMath::Clamp((VerticalDot * 10.0f), -50.0f, 50.0f);
-	BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * 10.0f);
+	BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * 25.0f);
 
 
 	UpdateAim(DeltaTime);

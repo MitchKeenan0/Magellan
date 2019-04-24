@@ -60,10 +60,7 @@ void UBeamTechComponent::RaycastForHit()
 			{
 				MyMechCharacter->ConfirmHit();
 
-				if (HitMech->IsBot())
-				{
-					HitMech->DestructMech();
-				}
+				HitMech->DestructMech();
 			}
 		}
 

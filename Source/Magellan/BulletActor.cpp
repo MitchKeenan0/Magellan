@@ -152,10 +152,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 
 						MyMechCharacter->ConfirmHit();
 
-						if (HitMech->IsBot())
-						{
-							HitMech->DestructMech();
-						}
+						HitMech->DestructMech();
 					}
 				}
 			}

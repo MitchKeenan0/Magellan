@@ -124,6 +124,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool IsBot() { return bCPU; }
 
+	UFUNCTION(BlueprintCallable)
+	bool IsDead() { return bDead; }
+
 	UFUNCTION()
 	void StartBotUpdate();
 
@@ -272,9 +275,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> HudWidgetClass;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<class UUserWidget> DeathWidgetClass;
+
 	// Variable to hold the widget After Creating it.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UUserWidget* MyHud;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UUserWidget* MyDeathScreen;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UParticleSystem* DestructParticles;
@@ -360,6 +369,9 @@ public:
 private:
 	UPROPERTY()
 	bool bCPU = false;
+
+	UPROPERTY()
+	bool bDead = false;
 
 	UPROPERTY()
 	bool bVisible = false;
