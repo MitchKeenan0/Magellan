@@ -162,7 +162,7 @@ void AMechCharacter::StartBotUpdate()
 	}
 	EquipSelection(EquipChoice);
 
-	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.001f, true, 0.01f); /// this needs its own value
+	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.01f); /// this needs its own value
 }
 void AMechCharacter::StopBotUpdate()
 {
@@ -176,6 +176,9 @@ void AMechCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// These need the smoothest of values ;p
+	UpdateLean(DeltaTime);
+	UpdateTorso(DeltaTime);
+
 	if (!bCPU)
 	{
 		UpdateAim(DeltaTime);
@@ -191,13 +194,9 @@ void AMechCharacter::UpdatePlayer()
 {
 	if ((Controller != nullptr) && (Controller->IsLocalController()))
 	{
-		float DeltaTime = GetWorld()->DeltaTimeSeconds;
-		
-		UpdateLean(DeltaTime);
-		UpdateTorso(DeltaTime);
-
 		if (!bCPU)
 		{
+			float DeltaTime = GetWorld()->DeltaTimeSeconds;
 			UpdateTelemetry(DeltaTime);
 		}
 	}
@@ -923,12 +922,12 @@ void AMechCharacter::UpdateBot()
 	// Occluded bots can update slower
 	if (!TorsoCollider->IsVisible() && bVisible)
 	{
-		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.1f); /// this needs its own value
+		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.1f, true, 0.1f); /// this needs its own value
 		bVisible = false;
 	}
 	else if (TorsoCollider->IsVisible() && !bVisible)
 	{
-		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.001f, true, 0.01f); /// this needs its own value
+		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.01f); /// this needs its own value
 		bVisible = true;
 	}
 }
@@ -946,7 +945,8 @@ void AMechCharacter::UpdateBotMovement()
 	ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
 	
 	// Forward move
-	if (HasLineOfSightTo(TargetLocation))
+	if (HasLineOfSightTo(TargetLocation)
+		&& (ToTarget.Size() >= 7000.0f))
 	{
 		ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
 		if (FMath::Abs(ForwardMoveValue) > 0.25f)
@@ -958,9 +958,9 @@ void AMechCharacter::UpdateBotMovement()
 	}
 
 	// Strafing move
-	else if (ToTarget.Size() >= 1000.0f)
+	else
 	{
-		LateralBias = ToTarget.Y + GetActorForwardVector().Y;
+		LateralBias = (ToTarget).GetSafeNormal().Y - GetActorForwardVector().Y;
 		StrafeMoveValue = FMath::Clamp(LateralBias, -1.0f, 1.0f);
 		
 		BotMoveValueStrafe = StrafeMoveValue;
@@ -982,7 +982,7 @@ void AMechCharacter::UpdateBotMovement()
 	// Turning move
 	ToHeadingRight = (GetActorRightVector() * Flat).GetSafeNormal();
 	DotToTargetRight = FVector::DotProduct(ToHeadingRight, ToTargetNorm);
-	if (FMath::Abs(DotToTargetRight) > 0.05f)
+	if (FMath::Abs(DotToTargetRight) > 1.0f)
 	{
 		MoveTurnValue = FMath::Clamp(DotToTargetRight * 100.0f, -1.0f, 1.0f);
 		
@@ -1001,8 +1001,6 @@ void AMechCharacter::BotMove()
 
 void AMechCharacter::UpdateBotAim(float DeltaTime)
 {
-	UpdateAim(DeltaTime);
-
 	FVector		TargetAimLocation = TargetMech->GetActorLocation();
 	float		Distance = FVector::Dist(GetActorLocation(), TargetAimLocation);
 	float		LeadFactor = 0.0f;
@@ -1047,6 +1045,9 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 	float VerticalDot = FVector::DotProduct(VerticalAim, ToPlayerSpeedNorm);
 	float VerticalInput = FMath::Clamp((VerticalDot * 10.0f), -50.0f, 50.0f);
 	BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * 10.0f);
+
+
+	UpdateAim(DeltaTime);
 }
 
 float AMechCharacter::GetAngleToTarget()
