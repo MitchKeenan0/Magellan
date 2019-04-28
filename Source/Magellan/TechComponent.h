@@ -44,6 +44,9 @@ public:
 	float AmmoSpeed = 35000.0f;
 
 	UPROPERTY(EditDefaultsOnly)
+	float HitDamage = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<AActor> AmmoType;
 
 	UPROPERTY(EditDefaultsOnly)

@@ -174,6 +174,8 @@ protected:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	virtual float TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+
 	UPROPERTY(BlueprintReadOnly)
 	FTimerHandle BotUpdateTimer;
 
@@ -300,6 +302,9 @@ protected:
 	float PlayerUpdateRate = 0.01f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float MaxHealth = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float MoveSpeed = 100.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
@@ -367,6 +372,9 @@ public:
 
 
 private:
+	UPROPERTY()
+	float MyHealth = -1.0f;
+
 	UPROPERTY()
 	bool bCPU = false;
 

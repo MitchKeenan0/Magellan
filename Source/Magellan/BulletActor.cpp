@@ -149,10 +149,11 @@ void ABulletActor::Collide(AActor* OtherActor)
 				{
 					if (HitMech->GetLifeSpan() == 0.0f)									/// hacky temp case for "not dead"
 					{
-
 						MyMechCharacter->ConfirmHit();
 
-						HitMech->DestructMech();
+						TSubclassOf<UDamageType> DmgType;
+
+						UGameplayStatics::ApplyDamage(HitMech, HitDamage, MyMechCharacter->GetController(), MyMechCharacter, DmgType);
 					}
 				}
 			}

@@ -46,6 +46,9 @@ protected:
 	bool bOverlap = false;
 
 	UPROPERTY(EditDefaultsOnly)
+	float HitDamage = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly)
 	float TimeAfterHit = 0.1f;
 
 	UPROPERTY(EditDefaultsOnly)

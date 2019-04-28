@@ -60,7 +60,9 @@ void UBeamTechComponent::RaycastForHit()
 			{
 				MyMechCharacter->ConfirmHit();
 
-				HitMech->DestructMech();
+				TSubclassOf<UDamageType> DmgType;
+
+				UGameplayStatics::ApplyDamage(HitMech, HitDamage, MyMechCharacter->GetController(), MyMechCharacter, DmgType);
 			}
 		}
 

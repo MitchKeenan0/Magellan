@@ -66,6 +66,9 @@ void AMechCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	
+	MyHealth = MaxHealth;
+	
 	GetCharacterMovement()->MaxWalkSpeed = TopSpeed;
 
 	EquipSelection(-1.0f);
@@ -115,6 +118,9 @@ void AMechCharacter::DestructMech()
 			}
 		}
 
+		// Clear up
+		EndScope();
+		PrimaryStopFire();
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 		bDead = true;
 
@@ -601,7 +607,7 @@ void AMechCharacter::UpdateTelemetry(float DeltaTime)
 
 		if (OnTelemetryDelegate.IsBound())
 		{
-			float Velocity = GetCharacterMovement()->Velocity.Size() * 0.04f;
+			float Velocity = GetCharacterMovement()->Velocity.Size() * 0.034f;
 			float Altitude = GetAltitude();
 			bool bAirborne = (Altitude > 5.0f); /// GetCharacterMovement()->IsFalling();
 			OnTelemetryDelegate.Broadcast(bAirborne, Velocity, Altitude);
@@ -886,15 +892,30 @@ void AMechCharacter::ConfirmHit()
 	if (bCPU)
 	{
 		TargetMech = nullptr;
-		if (bBotTriggerDown)
+		
+		/*if (bBotTriggerDown)
 		{
 			PrimaryStopFire();
-		}
+		}*/
 	}
 	else if (OnHitDelegate.IsBound())
 	{
 		OnHitDelegate.Broadcast();
 	}
+}
+
+float AMechCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	MyHealth -= Damage;
+
+	if (MyHealth <= 0.0f)
+	{
+		DestructMech();
+	}
+
+	///GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, TEXT("OUCH"));
+
+	return Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 }
 
 void AMechCharacter::UpdateBot()
@@ -909,7 +930,7 @@ void AMechCharacter::UpdateBot()
 		if (!bBotTriggerDown && (HasLineOfSightTo(TargetMech->GetActorLocation())) && (GetAngleToTarget() < 5.0f))
 		{
 			float RestTime = GetWorld()->TimeSeconds - TimeAtTriggerUp;
-			if (RestTime >= (BotBurstDuration * 1.7f))
+			if (RestTime >= (BotBurstDuration * 0.7f))
 			{
 				TargetLocation = TargetMech->GetActorLocation();
 				if (HasLineOfSightTo(TargetLocation))
@@ -1080,13 +1101,13 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 	FVector LateralAim = AimComponent->GetRightVector().GetSafeNormal();
 	float LateralDot = FVector::DotProduct(LateralAim, ToPlayerSpeedNorm);
 	float LateralInput = FMath::Clamp(LateralDot * 10.0f, -50.0f, 50.0f);
-	BotMouseX = FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * 25.0f);
+	BotMouseX = FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * 50.0f);
 
 	// Vertical mouse input
 	FVector VerticalAim = AimComponent->GetUpVector().GetSafeNormal();
 	float VerticalDot = FVector::DotProduct(VerticalAim, ToPlayerSpeedNorm);
 	float VerticalInput = FMath::Clamp((VerticalDot * 10.0f), -50.0f, 50.0f);
-	BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * 25.0f);
+	BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * 50.0f);
 
 
 	UpdateAim(DeltaTime);
