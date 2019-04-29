@@ -10,6 +10,8 @@
 ///#include "PaperSpriteComponent.h"
 #include "MechCharacter.generated.h"
 
+class UTargetingTechComponent;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FHitDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBrakeDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDodgeDelegate, bool, bOn);
@@ -209,6 +211,8 @@ protected:
 
 	void PrimaryFire();
 	void PrimaryStopFire();
+	void SecondaryFire();
+	void SecondaryStopFire();
 
 	float GetAngleToTarget();
 
@@ -362,6 +366,24 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly)
 	float EquipSelectValue = 0;
+
+
+	// Targeting
+	UPROPERTY(EditDefaultsOnly)
+	TArray<TSubclassOf<UTargetingTechComponent>> TargetingTech;
+
+	UPROPERTY(BlueprintReadOnly)
+	UTargetingTechComponent* TargetingComputer;
+
+	UPROPERTY(BlueprintReadOnly)
+	TArray<AActor*> LockedTargets;
+
+	UPROPERTY()
+	FTimerHandle TargetUpdateTimer;
+
+	UFUNCTION()
+	void UpdateTargets();
+
 
 public:	
 	// Called every frame

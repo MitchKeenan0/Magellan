@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "MechCharacter.h"
+#include "TargetingTechComponent.h"
 #include "Blueprint/UserWidget.h"
 
 // Sets default values
@@ -75,6 +76,9 @@ void AMechCharacter::BeginPlay()
 
 	// Timer for update
 	GetWorld()->GetTimerManager().SetTimer(PlayerUpdateTimer, this, &AMechCharacter::UpdatePlayer, PlayerUpdateRate, true, 0.1f);
+
+	// Targeting timer
+	GetWorld()->GetTimerManager().SetTimer(TargetUpdateTimer, this, &AMechCharacter::UpdateTargets, 0.1f, true, 1.1f);
 }
 
 void AMechCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -262,6 +266,8 @@ void AMechCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("Brake", IE_Released, this, &AMechCharacter::EndBrake);
 	PlayerInputComponent->BindAction("PrimaryFire", IE_Pressed, this, &AMechCharacter::PrimaryFire);
 	PlayerInputComponent->BindAction("PrimaryFire", IE_Released, this, &AMechCharacter::PrimaryStopFire);
+	PlayerInputComponent->BindAction("SecondaryFire", IE_Pressed, this, &AMechCharacter::SecondaryFire);
+	PlayerInputComponent->BindAction("SecondaryFire", IE_Released, this, &AMechCharacter::SecondaryStopFire);
 	PlayerInputComponent->BindAction("Centre", IE_Pressed, this, &AMechCharacter::CentreMech);
 	PlayerInputComponent->BindAction("Dodge", IE_Pressed, this, &AMechCharacter::Dodge);
 	PlayerInputComponent->BindAction("Scope", IE_Pressed, this, &AMechCharacter::StartScope);
@@ -769,6 +775,22 @@ void AMechCharacter::PrimaryStopFire()
 	}
 }
 
+void AMechCharacter::SecondaryFire()
+{
+	if (TargetingComputer != nullptr)
+	{
+		TargetingComputer->ActivateTechComponent();
+	}
+}
+
+void AMechCharacter::SecondaryStopFire()
+{
+	if (TargetingComputer != nullptr)
+	{
+		TargetingComputer->DeactivateTechComponent();
+	}
+}
+
 void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 {
 	if (AvailableTechPointers.Num() >= (TechID + 1))
@@ -824,6 +846,27 @@ void AMechCharacter::InitOptions()
 						BuildTech(i, i);
 					}
 				}
+			}
+		}
+	}
+
+	// Targeting
+	int NumTargeters = TargetingTech.Num();
+	if (NumTargeters > 0)
+	{
+		FActorSpawnParameters SpawnInfo;
+		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		if (TargetingTech[0] != nullptr)
+		{
+			TargetingComputer = NewObject<UTargetingTechComponent>(this, *TargetingTech[0]);
+			if (TargetingComputer != nullptr)
+			{
+				TargetingComputer->RegisterComponent();
+				TargetingComputer->InitTechComponent(this, -1.0f);
+				TargetingComputer->EmitPoint = AimComponent;
+				
+				///MyTechComponent->SetParticles(TechParticles);
 			}
 		}
 	}
@@ -889,18 +932,12 @@ void AMechCharacter::RemovePart(int TechID, int HardpointIndex)
 
 void AMechCharacter::ConfirmHit()
 {
-	if (bCPU)
+	if (!bCPU)
 	{
-		TargetMech = nullptr;
-		
-		/*if (bBotTriggerDown)
+		if (OnHitDelegate.IsBound())
 		{
-			PrimaryStopFire();
-		}*/
-	}
-	else if (OnHitDelegate.IsBound())
-	{
-		OnHitDelegate.Broadcast();
+			OnHitDelegate.Broadcast();
+		}
 	}
 }
 
@@ -918,9 +955,28 @@ float AMechCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, 
 	return Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 }
 
+void AMechCharacter::UpdateTargets()
+{
+	if (TargetingComputer != nullptr)
+	{
+		LockedTargets = TargetingComputer->GetLockedTargets();
+		
+		int NumTargets = LockedTargets.Num();
+		if (NumTargets > 0)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::White, FString::Printf(TEXT("Player has %i targets"), NumTargets));
+			
+			if (LockedTargets[0] != nullptr)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::White, FString::Printf(TEXT("Player target: %s"), *LockedTargets[0]->GetName()));
+			}
+		}
+	}
+}
+
 void AMechCharacter::UpdateBot()
 {
-	if ((TargetMech != nullptr) && (TargetMech->GetLifeSpan() == 0.0f))
+	if ((TargetMech != nullptr) && !TargetMech->IsDead())
 	{
 		float DeltaTime = GetWorld()->DeltaTimeSeconds;
 		
