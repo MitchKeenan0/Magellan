@@ -13,6 +13,7 @@
 class UTargetingTechComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FHitDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FTargetLockDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBrakeDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDodgeDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLiftDelegate, bool, bOn);
@@ -167,6 +168,8 @@ public:
 	FTelemetryDelegate OnTelemetryDelegate;
 	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
 	FHitDelegate OnHitDelegate;
+	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
+	FTargetLockDelegate OnTargetLockDelegate;
 
 	
 
@@ -282,11 +285,17 @@ protected:
 	TSubclassOf<class UUserWidget> HudWidgetClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+	TSubclassOf<class UUserWidget> TargeterWidgetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> DeathWidgetClass;
 
 	// Variable to hold the widget After Creating it.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UUserWidget* MyHud;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UUserWidget* MyTargeter;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UUserWidget* MyDeathScreen;

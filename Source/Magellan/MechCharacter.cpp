@@ -103,6 +103,13 @@ void AMechCharacter::DestructMech()
 				MyHud = nullptr;
 			}
 
+			if (MyTargeter != nullptr)
+			{
+				MyTargeter->RemoveFromViewport();
+				MyTargeter->Destruct();
+				MyTargeter = nullptr;
+			}
+
 			APlayerController* MyPlayerController = Cast<APlayerController>(GetController());
 			if (MyPlayerController != nullptr)
 			{
@@ -187,6 +194,13 @@ void AMechCharacter::InitMech()
 		{
 			MyHud->AddToViewport();
 			MyHud->SetOwningPlayer(MyPlayerCtrl);
+		}
+
+		MyTargeter = CreateWidget<UUserWidget>(MyPlayerCtrl, TargeterWidgetClass);
+		if (MyTargeter)
+		{
+			MyTargeter->AddToViewport();
+			MyTargeter->SetOwningPlayer(MyPlayerCtrl);
 		}
 	}
 	
@@ -961,15 +975,9 @@ void AMechCharacter::UpdateTargets()
 	{
 		LockedTargets = TargetingComputer->GetLockedTargets();
 		
-		int NumTargets = LockedTargets.Num();
-		if (NumTargets > 0)
+		if (OnTargetLockDelegate.IsBound())
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::White, FString::Printf(TEXT("Player has %i targets"), NumTargets));
-			
-			if (LockedTargets[0] != nullptr)
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::White, FString::Printf(TEXT("Player target: %s"), *LockedTargets[0]->GetName()));
-			}
+			OnTargetLockDelegate.Broadcast();
 		}
 	}
 }

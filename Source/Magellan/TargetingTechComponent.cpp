@@ -20,6 +20,12 @@ void UTargetingTechComponent::StartFire()
 
 	// EndTimer
 	GetWorld()->GetTimerManager().SetTimer(TraceEndTimer, this, &UTargetingTechComponent::StopFire, 1.0f, false, 1.0f);
+
+	// Update Timer
+	if (!GetWorld()->GetTimerManager().IsTimerActive(UpdateTimer))
+	{
+		GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &UTargetingTechComponent::UpdateTargets, 0.2f, true, 0.2f);
+	}
 }
 
 void UTargetingTechComponent::StopFire()
@@ -27,53 +33,83 @@ void UTargetingTechComponent::StopFire()
 	GetWorld()->GetTimerManager().ClearTimer(RaycastTimer);
 }
 
-void UTargetingTechComponent::RaycastForHit()
+void UTargetingTechComponent::UpdateTargets()
 {
-	FHitResult Hit;
-	FVector LineStart = EmitPoint->GetComponentLocation() + (EmitPoint->GetForwardVector() * 500.0f);
-	FVector LineEnd = LineStart + (EmitPoint->GetForwardVector() * RaycastRange);
-	
-	bool Linecast = GetWorld()->LineTraceSingleByChannel(
-		Hit,
-		LineStart,
-		LineEnd,
-		ECollisionChannel::ECC_Pawn);
-	
-	if (Linecast)
+	// Sift thru and remove targets
+	int NumTargets = LockedTargets.Num();
+	if (NumTargets > 0)
 	{
-		AMechCharacter* HitMech = Cast<AMechCharacter>(Hit.GetActor());
-		if (HitMech != nullptr)
+		
+		for (int i = 0; i < NumTargets; i++)
 		{
-			bool bAdd = true;
-			
-			int NumTargets = LockedTargets.Num();
-			if (NumTargets > 0)
+			if (LockedTargets[i] != nullptr)
 			{
-				for (int i = 0; i < NumTargets; i++)
+				AMechCharacter* MechTarget = Cast<AMechCharacter>(LockedTargets[i]);
+				if (MechTarget != nullptr)
 				{
-					AActor* Test = LockedTargets[i];
-					if ((Test != nullptr) && (Test == HitMech))
+
+					if (MechTarget->IsDead())
 					{
-						bAdd = false;
+						LockedTargets.RemoveSingleSwap(LockedTargets[i]);
 					}
 				}
 			}
+		}
+	}
+}
 
-			if (bAdd && 
-				(LockedTargets.Num() < MaxTargets))
+void UTargetingTechComponent::RaycastForHit()
+{
+	TArray<FHitResult> Hits;
+	FVector LineStart = EmitPoint->GetComponentLocation() + (EmitPoint->GetForwardVector() * 500.0f);
+	FVector LineEnd = LineStart + (EmitPoint->GetForwardVector() * RaycastRange);
+	
+	FCollisionShape Shape = FCollisionShape::MakeBox(FVector(250.0f, 250.0f, 250.0f));
+	FHitResult SweepResult;
+	const FQuat Rotation = EmitPoint->GetComponentRotation().Quaternion();
+	bool Linecast = GetWorld()->SweepMultiByChannel(Hits, LineStart, LineEnd, Rotation, ECollisionChannel::ECC_Visibility, Shape);
+		///(Hits, StartLocation, EndLocation, ShapeRotation, ECC_Visible, Shape);
+
+		/*GetWorld()->LineTraceSingleByChannel(
+		Hit,
+		LineStart,
+		LineEnd,
+		ECollisionChannel::ECC_Pawn);*/
+	
+	if (Linecast)
+	{
+		int NumHits = Hits.Num();
+		if (NumHits > 0)
+		{
+			for (int i = 0; i < NumHits; i++)
 			{
-				LockedTargets.Add(HitMech);
-				
-				GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, TEXT("Added Target"));
+				AMechCharacter* HitMech = Cast<AMechCharacter>(Hits[i].GetActor());
+				if (HitMech != nullptr)
+				{
+					bool bAdd = true;
+
+					int NumTargets = LockedTargets.Num();
+					if (NumTargets > 0)
+					{
+						for (int j = 0; j < NumTargets; j++)
+						{
+							AActor* Test = LockedTargets[j];
+							if ((Test != nullptr) && (Test == HitMech))
+							{
+								bAdd = false;
+							}
+						}
+					}
+
+					if (bAdd &&
+						(LockedTargets.Num() < MaxTargets))
+					{
+						LockedTargets.Add(HitMech);
+
+						GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, TEXT("Added Target"));
+					}
+				}
 			}
 		}
-
-		//if (MyImpactParticles != nullptr)
-		//{
-		//	// Visuals
-		//	FVector Location = Hit.ImpactPoint;
-		//	FRotator Rotation = GetOwner()->GetActorForwardVector().Rotation();
-		//	ImpactParticles = UGameplayStatics::SpawnEmitterAttached(MyImpactParticles, GetOwner()->GetRootComponent(), NAME_None, Location, Rotation, EAttachLocation::KeepWorldPosition, true);
-		//}
 	}
 }

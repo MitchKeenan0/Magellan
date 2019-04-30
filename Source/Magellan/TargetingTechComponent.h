@@ -40,6 +40,9 @@ protected:
 	FTimerHandle TraceEndTimer;
 
 	UPROPERTY()
+	FTimerHandle UpdateTimer;
+
+	UPROPERTY()
 	TArray<AActor*> LockedTargets;
 
 
@@ -51,6 +54,9 @@ protected:
 
 	UFUNCTION()
 	void RaycastForHit();
+
+	UFUNCTION()
+	void UpdateTargets();
 
 	/*UPROPERTY(BlueprintReadOnly)
 	UParticleSystemComponent* ActiveParticles;*/
