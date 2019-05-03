@@ -14,6 +14,7 @@ class UTargetingTechComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FHitDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FTargetLockDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FReceiveLockDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBrakeDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDodgeDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLiftDelegate, bool, bOn);
@@ -96,6 +97,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	int GetTeam() { return TeamID; }
 
+	UFUNCTION(BlueprintCallable)
+	void ReceiveLock();
+
 	UFUNCTION()
 	void ConfirmHit();
 
@@ -170,6 +174,8 @@ public:
 	FHitDelegate OnHitDelegate;
 	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
 	FTargetLockDelegate OnTargetLockDelegate;
+	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
+	FReceiveLockDelegate OnReceiveLockDelegate;
 
 	
 

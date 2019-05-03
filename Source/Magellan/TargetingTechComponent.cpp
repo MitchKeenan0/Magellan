@@ -84,7 +84,7 @@ void UTargetingTechComponent::RaycastForHit()
 			for (int i = 0; i < NumHits; i++)
 			{
 				AMechCharacter* HitMech = Cast<AMechCharacter>(Hits[i].GetActor());
-				if (HitMech != nullptr)
+				if ((HitMech != nullptr) && (HitMech != MyMechCharacter))
 				{
 					bool bAdd = true;
 
@@ -93,20 +93,30 @@ void UTargetingTechComponent::RaycastForHit()
 					{
 						for (int j = 0; j < NumTargets; j++)
 						{
+							// Check for duplicate
 							AActor* Test = LockedTargets[j];
 							if ((Test != nullptr) && (Test == HitMech))
+							{
+								bAdd = false;
+							}
+
+							// Check for team ID
+							if (HitMech->GetTeam() == MyMechCharacter->GetTeam())
 							{
 								bAdd = false;
 							}
 						}
 					}
 
+					// Target aquired
 					if (bAdd &&
 						(LockedTargets.Num() < MaxTargets))
 					{
 						LockedTargets.Add(HitMech);
 
-						GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, TEXT("Added Target"));
+						HitMech->ReceiveLock();
+
+						GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("Target Aquired"));
 					}
 				}
 			}

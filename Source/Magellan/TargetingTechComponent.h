@@ -31,7 +31,7 @@ protected:
 	float RaycastRange = 55000.0f;
 
 	UPROPERTY(EditDefaultsOnly)
-	int MaxTargets = 3.0f;
+	int MaxTargets = 1.0f;
 
 	UPROPERTY()
 	FTimerHandle RaycastTimer;

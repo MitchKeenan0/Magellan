@@ -78,7 +78,7 @@ void AMechCharacter::BeginPlay()
 	GetWorld()->GetTimerManager().SetTimer(PlayerUpdateTimer, this, &AMechCharacter::UpdatePlayer, PlayerUpdateRate, true, 0.1f);
 
 	// Targeting timer
-	GetWorld()->GetTimerManager().SetTimer(TargetUpdateTimer, this, &AMechCharacter::UpdateTargets, 0.1f, true, 1.1f);
+	GetWorld()->GetTimerManager().SetTimer(TargetUpdateTimer, this, &AMechCharacter::UpdateTargets, 0.05f, true, 1.1f);
 }
 
 void AMechCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -969,12 +969,30 @@ float AMechCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, 
 	return Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 }
 
+void AMechCharacter::ReceiveLock()
+{
+	if (!bCPU && OnReceiveLockDelegate.IsBound())
+	{
+		OnReceiveLockDelegate.Broadcast();
+
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("OH SHIT SON U GOT LOCKED"));
+	}
+}
+
 void AMechCharacter::UpdateTargets()
 {
 	if (TargetingComputer != nullptr)
 	{
+		
 		LockedTargets = TargetingComputer->GetLockedTargets();
 		
+		// For bot
+		if ((LockedTargets.Num() > 0) && (LockedTargets[0] != nullptr))
+		{
+			TargetMech = Cast<AMechCharacter>(LockedTargets[0]);
+		}
+		
+		// Hud update
 		if (OnTargetLockDelegate.IsBound())
 		{
 			OnTargetLockDelegate.Broadcast();
@@ -984,6 +1002,9 @@ void AMechCharacter::UpdateTargets()
 
 void AMechCharacter::UpdateBot()
 {
+	// Get target
+	SecondaryFire();
+
 	if ((TargetMech != nullptr) && !TargetMech->IsDead())
 	{
 		float DeltaTime = GetWorld()->DeltaTimeSeconds;
@@ -1017,26 +1038,30 @@ void AMechCharacter::UpdateBot()
 				TimeAtTriggerUp = GetWorld()->TimeSeconds;
 			}
 		}
+
+		
 	}
 	else
 	{
-		// Get target
-		TArray<AActor*> Mechs;
-		UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMechCharacter::StaticClass(), Mechs);
-		int MechNum = Mechs.Num();
-		if (MechNum > 0)
+		if (LockedTargets.Num() < 1)
 		{
-			int Rando = FMath::FloorToInt(FMath::FRandRange(0.0f, (MechNum - 1.0f)));
-			AMechCharacter* MechC = Cast<AMechCharacter>(Mechs[Rando]);
-			if (MechC != nullptr)
+			TArray<AActor*> Mechs;
+			UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMechCharacter::StaticClass(), Mechs);
+			int MechNum = Mechs.Num();
+			if (MechNum > 0)
 			{
-				// Check target is valid
-				if ((MechC != this) && !MechC->IsDead())
+				int Rando = FMath::FloorToInt(FMath::FRandRange(0.0f, (MechNum - 1.0f)));
+				AMechCharacter* MechC = Cast<AMechCharacter>(Mechs[Rando]);
+				if (MechC != nullptr)
 				{
-					// Check team
-					if (MechC->GetTeam() != TeamID)
+					// Check target is valid
+					if ((MechC != this) && !MechC->IsDead())
 					{
-						TargetMech = MechC;
+						// Check team
+						if (MechC->GetTeam() != TeamID)
+						{
+							TargetMech = MechC;
+						}
 					}
 				}
 			}
@@ -1057,6 +1082,8 @@ void AMechCharacter::UpdateBot()
 		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.01f); /// this needs its own value
 		bVisible = true;
 	}
+
+	SecondaryStopFire(); // ???
 }
 
 void AMechCharacter::UpdateBotMovement()
