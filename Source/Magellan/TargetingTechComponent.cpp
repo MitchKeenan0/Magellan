@@ -64,7 +64,7 @@ void UTargetingTechComponent::RaycastForHit()
 	FVector LineStart = EmitPoint->GetComponentLocation() + (EmitPoint->GetForwardVector() * 500.0f);
 	FVector LineEnd = LineStart + (EmitPoint->GetForwardVector() * RaycastRange);
 	
-	FCollisionShape Shape = FCollisionShape::MakeBox(FVector(250.0f, 250.0f, 250.0f));
+	FCollisionShape Shape = FCollisionShape::MakeBox(FVector(1250.0f, 550.0f, 550.0f));
 	FHitResult SweepResult;
 	const FQuat Rotation = EmitPoint->GetComponentRotation().Quaternion();
 	bool Linecast = GetWorld()->SweepMultiByChannel(Hits, LineStart, LineEnd, Rotation, ECollisionChannel::ECC_Visibility, Shape);
@@ -115,8 +115,6 @@ void UTargetingTechComponent::RaycastForHit()
 						LockedTargets.Add(HitMech);
 
 						HitMech->ReceiveLock();
-
-						GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("Target Aquired"));
 					}
 				}
 			}

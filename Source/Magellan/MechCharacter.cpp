@@ -971,6 +971,7 @@ float AMechCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, 
 
 void AMechCharacter::ReceiveLock()
 {
+	
 	if (!bCPU && OnReceiveLockDelegate.IsBound())
 	{
 		OnReceiveLockDelegate.Broadcast();
@@ -993,7 +994,7 @@ void AMechCharacter::UpdateTargets()
 		}
 		
 		// Hud update
-		if (OnTargetLockDelegate.IsBound())
+		if (!bCPU && OnTargetLockDelegate.IsBound())
 		{
 			OnTargetLockDelegate.Broadcast();
 		}
@@ -1002,9 +1003,6 @@ void AMechCharacter::UpdateTargets()
 
 void AMechCharacter::UpdateBot()
 {
-	// Get target
-	SecondaryFire();
-
 	if ((TargetMech != nullptr) && !TargetMech->IsDead())
 	{
 		float DeltaTime = GetWorld()->DeltaTimeSeconds;
@@ -1043,7 +1041,12 @@ void AMechCharacter::UpdateBot()
 	}
 	else
 	{
-		if (LockedTargets.Num() < 1)
+		if (FMath::RandRange(0.0f, 1.0f) > 0.9f)
+		{
+			SecondaryFire();
+		}
+
+		if (LockedTargets.Num() == 0)
 		{
 			TArray<AActor*> Mechs;
 			UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMechCharacter::StaticClass(), Mechs);
@@ -1083,7 +1086,7 @@ void AMechCharacter::UpdateBot()
 		bVisible = true;
 	}
 
-	SecondaryStopFire(); // ???
+	//SecondaryStopFire(); // ???
 }
 
 void AMechCharacter::UpdateBotMovement()
