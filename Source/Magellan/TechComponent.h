@@ -38,6 +38,8 @@ public:
 	UFUNCTION()
 	float GetAmmoSpeed() { return AmmoSpeed; }
 
+	UFUNCTION()
+	void DeliverHitTo(AMechCharacter* Target, FVector Location);
 	
 	
 	UPROPERTY(EditDefaultsOnly)
@@ -58,6 +60,9 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	USceneComponent* EmitPoint;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UCameraShake> CameraShakeOnActivate;
+
 	
 
 protected:
@@ -69,14 +74,14 @@ protected:
 	UFUNCTION()
 	void ShakeCamera();
 
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UCameraShake> CameraShakeOnActivate;
-
 	UPROPERTY(BlueprintReadOnly)
 	AMechCharacter* MyMechCharacter;
 
 	UPROPERTY(BlueprintReadOnly)
 	UParticleSystem* MyParticles;
+
+	UPROPERTY(EditDefaultsOnly)
+	UParticleSystem* HitParticles;
 
 	UPROPERTY(BlueprintReadOnly)
 	float Capacity = 0.0f;

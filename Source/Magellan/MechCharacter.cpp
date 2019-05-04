@@ -312,12 +312,15 @@ void AMechCharacter::MoveForward(float Value)
 	if (Value != 0.0f)
 	{
 		float LegsAngle = GetLegsToTorsoAngle();
-		float AlignSpeed = FMath::Abs(LegsAngle) * 0.01f;
-		if (LegsAngle < -1.0f)
+
+		float AlignAngleScale = FMath::Clamp(LegsAngle * 0.1f, -2.0f, 2.0f);
+		float VelAlignScale = FMath::Clamp(GetVelocity().Size(), 0.1f, 5000.0f) * 0.015f;
+		float AlignSpeed = FMath::Abs(VelAlignScale * AlignAngleScale) * 0.0015f * TorsoSpeed;
+		if (LegsAngle < -5.0f)
 		{
 			MoveTurn(AlignSpeed);
 		}
-		else if (LegsAngle > 1.0f)
+		else if (LegsAngle > 5.0f)
 		{
 			MoveTurn(-AlignSpeed);
 		}
@@ -964,6 +967,15 @@ float AMechCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, 
 		DestructMech();
 	}
 
+	if (!bCPU && (CameraShakeOnDamage != nullptr))
+	{
+		APlayerController* MyController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+		if (MyController != nullptr)
+		{
+			MyController->ClientPlayCameraShake(CameraShakeOnDamage, Damage, ECameraAnimPlaySpace::CameraLocal, GetActorRotation());
+		}
+	}
+
 	///GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::White, TEXT("OUCH"));
 
 	return Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
@@ -975,8 +987,6 @@ void AMechCharacter::ReceiveLock()
 	if (!bCPU && OnReceiveLockDelegate.IsBound())
 	{
 		OnReceiveLockDelegate.Broadcast();
-
-		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("OH SHIT SON U GOT LOCKED"));
 	}
 }
 
@@ -994,7 +1004,7 @@ void AMechCharacter::UpdateTargets()
 		}
 		
 		// Hud update
-		if (!bCPU && OnTargetLockDelegate.IsBound())
+		if (!bDead && !bCPU && OnTargetLockDelegate.IsBound())
 		{
 			OnTargetLockDelegate.Broadcast();
 		}
@@ -1041,7 +1051,7 @@ void AMechCharacter::UpdateBot()
 	}
 	else
 	{
-		if (FMath::RandRange(0.0f, 1.0f) > 0.9f)
+		if (FMath::RandRange(0.0f, 1.0f) > 0.99f)
 		{
 			SecondaryFire();
 		}
@@ -1181,7 +1191,7 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 	TargetAimLocation += LeadFactor * (PlayerVelocity * TempScalar * 0.1f);
 
 	// Velocity offset
-	FVector MyVelocity = GetCharacterMovement()->Velocity * 0.1f;
+	FVector MyVelocity = GetCharacterMovement()->Velocity * 0.16f;
 	TargetAimLocation -= (LeadFactor * MyVelocity);
 
 	

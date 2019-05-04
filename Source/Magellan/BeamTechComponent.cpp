@@ -63,6 +63,8 @@ void UBeamTechComponent::RaycastForHit()
 				TSubclassOf<UDamageType> DmgType;
 
 				UGameplayStatics::ApplyDamage(HitMech, HitDamage, MyMechCharacter->GetController(), MyMechCharacter, DmgType);
+
+				DeliverHitTo(HitMech, Hit.ImpactPoint);
 			}
 		}
 

@@ -8,12 +8,6 @@ ABulletActor::ABulletActor()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	/*CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
-	CollisionBox->SetGenerateOverlapEvents(true);
-	CollisionBox->OnComponentBeginOverlap.AddDynamic(this, &ABulletActor::OnBulletBeginOverlap);
-	CollisionBox->OnComponentHit.AddDynamic(this, &ABulletActor::OnBulletHit);*/
-	
-
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetCollisionEnabled(ECollisionEnabled::Type::NoCollision);
 	MeshComp->SetCollisionObjectType(ECollisionChannel::ECC_EngineTraceChannel1);
@@ -26,7 +20,6 @@ ABulletActor::ABulletActor()
 	ParticleComp->bAbsoluteScale = true;
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
-	//ProjectileMovement->InitialSpeed = ProjectileSpeed;
 
 	RotatingMovement = CreateDefaultSubobject<URotatingMovementComponent>(TEXT("RotatingMovement"));
 
@@ -60,16 +53,16 @@ void ABulletActor::InitBullet(UTechComponent* Shooter)
 		MyTechComponent = Shooter;
 		MyMechCharacter = MyTechComponent->GetCharacter();
 
-		// Inherit bullet velocity from moving shooter
 		if (MyMechCharacter != nullptr)
 		{
-			FVector MechVelocity = MyMechCharacter->GetVelocity();
+			// Inherit bullet velocity from moving shooter
+			FVector MechVelocity = MyMechCharacter->GetVelocity() * 0.3f;
 			FVector CurrentV = ProjectileMovement->Velocity;
 			FVector NewV = CurrentV + MechVelocity;
 			ProjectileMovement->Velocity += NewV;
 
 			// Launch!
-			GetWorld()->GetTimerManager().SetTimer(LaunchTimer, this, &ABulletActor::LaunchBullet, 0.05f, false, 0.05f);
+			GetWorld()->GetTimerManager().SetTimer(LaunchTimer, this, &ABulletActor::LaunchBullet, 0.015f, false, 0.015f);
 		}
 	}
 }
@@ -154,6 +147,8 @@ void ABulletActor::Collide(AActor* OtherActor)
 						TSubclassOf<UDamageType> DmgType;
 
 						UGameplayStatics::ApplyDamage(HitMech, HitDamage, MyMechCharacter->GetController(), MyMechCharacter, DmgType);
+
+						MyTechComponent->DeliverHitTo(HitMech, GetActorLocation());
 					}
 				}
 			}

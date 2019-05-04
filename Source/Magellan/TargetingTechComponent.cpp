@@ -19,18 +19,18 @@ void UTargetingTechComponent::StartFire()
 	GetWorld()->GetTimerManager().SetTimer(RaycastTimer, this, &UTargetingTechComponent::RaycastForHit, RaycastRate, true, 0.001f);
 
 	// EndTimer
-	GetWorld()->GetTimerManager().SetTimer(TraceEndTimer, this, &UTargetingTechComponent::StopFire, 1.0f, false, 1.0f);
+	GetWorld()->GetTimerManager().SetTimer(TraceEndTimer, this, &UTargetingTechComponent::StopFire, 5.0f, false, 5.0f);
 
 	// Update Timer
 	if (!GetWorld()->GetTimerManager().IsTimerActive(UpdateTimer))
 	{
-		GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &UTargetingTechComponent::UpdateTargets, 0.2f, true, 0.2f);
+		GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &UTargetingTechComponent::UpdateTargets, 0.6f, true, 0.6f);
 	}
 }
 
 void UTargetingTechComponent::StopFire()
 {
-	GetWorld()->GetTimerManager().ClearTimer(RaycastTimer);
+	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 }
 
 void UTargetingTechComponent::UpdateTargets()
@@ -39,15 +39,13 @@ void UTargetingTechComponent::UpdateTargets()
 	int NumTargets = LockedTargets.Num();
 	if (NumTargets > 0)
 	{
-		
-		for (int i = 0; i < NumTargets; i++)
+		for (int i = 0; i < NumTargets; i++) /// cant use auto because we may alter this array here
 		{
 			if (LockedTargets[i] != nullptr)
 			{
 				AMechCharacter* MechTarget = Cast<AMechCharacter>(LockedTargets[i]);
 				if (MechTarget != nullptr)
 				{
-
 					if (MechTarget->IsDead())
 					{
 						LockedTargets.RemoveSingleSwap(LockedTargets[i]);
@@ -61,22 +59,12 @@ void UTargetingTechComponent::UpdateTargets()
 void UTargetingTechComponent::RaycastForHit()
 {
 	TArray<FHitResult> Hits;
-	FVector LineStart = EmitPoint->GetComponentLocation() + (EmitPoint->GetForwardVector() * 500.0f);
+	FVector LineStart = EmitPoint->GetComponentLocation();
 	FVector LineEnd = LineStart + (EmitPoint->GetForwardVector() * RaycastRange);
-	
-	FCollisionShape Shape = FCollisionShape::MakeBox(FVector(1250.0f, 550.0f, 550.0f));
-	FHitResult SweepResult;
-	const FQuat Rotation = EmitPoint->GetComponentRotation().Quaternion();
-	bool Linecast = GetWorld()->SweepMultiByChannel(Hits, LineStart, LineEnd, Rotation, ECollisionChannel::ECC_Visibility, Shape);
-		///(Hits, StartLocation, EndLocation, ShapeRotation, ECC_Visible, Shape);
+	FCollisionShape Shape = FCollisionShape::MakeBox(FVector(300.0f, 500.0f, 500.0f));
 
-		/*GetWorld()->LineTraceSingleByChannel(
-		Hit,
-		LineStart,
-		LineEnd,
-		ECollisionChannel::ECC_Pawn);*/
-	
-	if (Linecast)
+	bool bHitBocks = GetWorld()->SweepMultiByChannel(Hits, LineStart, LineEnd, FQuat::Identity, ECollisionChannel::ECC_Visibility, Shape);
+	if (bHitBocks)
 	{
 		int NumHits = Hits.Num();
 		if (NumHits > 0)
@@ -86,36 +74,41 @@ void UTargetingTechComponent::RaycastForHit()
 				AMechCharacter* HitMech = Cast<AMechCharacter>(Hits[i].GetActor());
 				if ((HitMech != nullptr) && (HitMech != MyMechCharacter))
 				{
-					bool bAdd = true;
-
-					int NumTargets = LockedTargets.Num();
-					if (NumTargets > 0)
+					if (HitMech->GetTeam() != MyMechCharacter->GetTeam())
 					{
-						for (int j = 0; j < NumTargets; j++)
+						// Decide whether to add target
+						bool bAdd = true;
+						int NumTargets = LockedTargets.Num();
+						if (NumTargets > 0)
 						{
 							// Check for duplicate
-							AActor* Test = LockedTargets[j];
-							if ((Test != nullptr) && (Test == HitMech))
+							for (auto& Attotor : LockedTargets)
 							{
-								bAdd = false;
-							}
-
-							// Check for team ID
-							if (HitMech->GetTeam() == MyMechCharacter->GetTeam())
-							{
-								bAdd = false;
+								if (HitMech == Attotor)
+								{
+									bAdd = false;
+								}
 							}
 						}
-					}
 
-					// Target aquired
-					if (bAdd &&
-						(LockedTargets.Num() < MaxTargets))
-					{
-						LockedTargets.Add(HitMech);
+						// Target aquired
+						if (bAdd &&
+							(NumTargets <= MaxTargets))
+						{
+							// Clear the array
+							LockedTargets.Empty();
 
-						HitMech->ReceiveLock();
+							if ((NumTargets >= 1) && LockedTargets.IsValidIndex(i))
+							{
+								LockedTargets.RemoveSingle(LockedTargets[i]);
+							}
+
+							LockedTargets.Add(HitMech);
+
+							HitMech->ReceiveLock();
+						}
 					}
+					
 				}
 			}
 		}

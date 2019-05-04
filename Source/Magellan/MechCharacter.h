@@ -312,6 +312,9 @@ protected:
 	UPROPERTY(BlueprintReadOnly)
 	UParticleSystemComponent* MyDestructParticles;
 
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UCameraShake> CameraShakeOnDamage;
+
 
 
 	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")

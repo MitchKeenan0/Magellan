@@ -74,3 +74,16 @@ void UTechComponent::ShakeCamera()
 	}
 }
 
+void UTechComponent::DeliverHitTo(AMechCharacter* Target, FVector Location)
+{
+	if (HitParticles != nullptr)
+	{
+		UParticleSystem* DamageParticles = Cast<UParticleSystem>(UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), HitParticles, Location, FRotator::ZeroRotator, true));
+		
+		if (Target->GetController() == UGameplayStatics::GetPlayerController(GetWorld(), 0))
+		{
+			ShakeCamera();
+		}
+	}
+}
+
