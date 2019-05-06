@@ -97,7 +97,7 @@ void ATechActor::ActivateTech()
 			{
 				MyTechComponent->ActivateTechComponent();
 				
-				if (!MyMechCharacter->IsBot() && (CameraShakeOnActivate != nullptr))
+				if ((MyMechCharacter != nullptr) && !MyMechCharacter->IsBot() && (CameraShakeOnActivate != nullptr))
 				{
 					MyController->ClientPlayCameraShake(CameraShakeOnActivate, 1.0f, ECameraAnimPlaySpace::CameraLocal, GetActorRotation());
 				}

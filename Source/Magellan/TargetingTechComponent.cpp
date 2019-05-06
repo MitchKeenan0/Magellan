@@ -15,22 +15,22 @@ void UTargetingTechComponent::DeactivateTechComponent()
 
 void UTargetingTechComponent::StartFire()
 {
+	// Clear the array
+	LockedTargets.Empty();
+
 	// RaycastTimer
 	GetWorld()->GetTimerManager().SetTimer(RaycastTimer, this, &UTargetingTechComponent::RaycastForHit, RaycastRate, true, 0.001f);
 
-	// EndTimer
-	GetWorld()->GetTimerManager().SetTimer(TraceEndTimer, this, &UTargetingTechComponent::StopFire, 5.0f, false, 5.0f);
-
 	// Update Timer
-	if (!GetWorld()->GetTimerManager().IsTimerActive(UpdateTimer))
-	{
-		GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &UTargetingTechComponent::UpdateTargets, 0.6f, true, 0.6f);
-	}
+	GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &UTargetingTechComponent::UpdateTargets, 0.05f, true, 0.05f);
+
+	// EndTimer
+	//GetWorld()->GetTimerManager().SetTimer(TraceEndTimer, this, &UTargetingTechComponent::StopFire, 5.0f, false, 5.0f);
 }
 
 void UTargetingTechComponent::StopFire()
 {
-	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+	GetWorld()->GetTimerManager().ClearTimer(RaycastTimer);
 }
 
 void UTargetingTechComponent::UpdateTargets()
@@ -44,13 +44,16 @@ void UTargetingTechComponent::UpdateTargets()
 			if (LockedTargets[i] != nullptr)
 			{
 				AMechCharacter* MechTarget = Cast<AMechCharacter>(LockedTargets[i]);
-				if (MechTarget != nullptr)
+				if (MechTarget && MechTarget->IsDead())
 				{
-					if (MechTarget->IsDead())
-					{
-						LockedTargets.RemoveSingleSwap(LockedTargets[i]);
-					}
+					LockedTargets.RemoveSingleSwap(LockedTargets[i]);
+					
+					MyMechCharacter->OnTargetLockDelegate.Broadcast(false);
 				}
+			}
+			else
+			{
+				MyMechCharacter->OnTargetLockDelegate.Broadcast(false);
 			}
 		}
 	}
@@ -72,7 +75,7 @@ void UTargetingTechComponent::RaycastForHit()
 			for (int i = 0; i < NumHits; i++)
 			{
 				AMechCharacter* HitMech = Cast<AMechCharacter>(Hits[i].GetActor());
-				if ((HitMech != nullptr) && (HitMech != MyMechCharacter))
+				if ((HitMech != nullptr) && (HitMech != MyMechCharacter) && !HitMech->IsDead())
 				{
 					if (HitMech->GetTeam() != MyMechCharacter->GetTeam())
 					{
@@ -93,15 +96,12 @@ void UTargetingTechComponent::RaycastForHit()
 
 						// Target aquired
 						if (bAdd &&
-							(NumTargets <= MaxTargets))
+							(NumTargets < MaxTargets))
 						{
-							// Clear the array
-							LockedTargets.Empty();
-
-							if ((NumTargets >= 1) && LockedTargets.IsValidIndex(i))
+							/*if ((NumTargets >= 1) && LockedTargets.IsValidIndex(i))
 							{
 								LockedTargets.RemoveSingle(LockedTargets[i]);
-							}
+							}*/
 
 							LockedTargets.Add(HitMech);
 

@@ -13,8 +13,9 @@
 class UTargetingTechComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FHitDelegate);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FTargetLockDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FReceiveLockDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FTargetLockDelegate, bool, bLock);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FTargetScanDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBrakeDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDodgeDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FLiftDelegate, bool, bOn);
@@ -176,7 +177,8 @@ public:
 	FTargetLockDelegate OnTargetLockDelegate;
 	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
 	FReceiveLockDelegate OnReceiveLockDelegate;
-
+	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
+	FTargetScanDelegate OnTargetScanDelegate;
 	
 
 protected:

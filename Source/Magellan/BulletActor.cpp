@@ -140,7 +140,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 				AMechCharacter* HitMech = Cast<AMechCharacter>(OtherActor);
 				if (HitMech != nullptr)
 				{
-					if (HitMech->GetLifeSpan() == 0.0f)									/// hacky temp case for "not dead"
+					if (!HitMech->IsDead())									/// hacky temp case for "not dead"
 					{
 						MyMechCharacter->ConfirmHit();
 

@@ -113,8 +113,9 @@ void AMechCharacter::DestructMech()
 			APlayerController* MyPlayerController = Cast<APlayerController>(GetController());
 			if (MyPlayerController != nullptr)
 			{
-				MyPlayerController->SetInputMode(FInputModeUIOnly());
+				MyPlayerController->SetInputMode(FInputModeGameAndUI());
 				MyPlayerController->bShowMouseCursor = true;
+				GetWorld()->GetGameViewport()->SetMouseLockMode(EMouseLockMode::DoNotLock);
 
 				// Death screen
 				if (DeathWidgetClass != nullptr)
@@ -468,7 +469,10 @@ void AMechCharacter::CentreMech()
 
 void AMechCharacter::StartScope()
 {
-	CameraComp->FieldOfView = ScopeFOV;
+	if (!bDead)
+	{
+		CameraComp->FieldOfView = ScopeFOV;
+	}
 }
 
 void AMechCharacter::EndScope()
@@ -797,6 +801,11 @@ void AMechCharacter::SecondaryFire()
 	if (TargetingComputer != nullptr)
 	{
 		TargetingComputer->ActivateTechComponent();
+
+		if (!bCPU && (OnTargetScanDelegate.IsBound()))
+		{
+			OnTargetScanDelegate.Broadcast(true);
+		}
 	}
 }
 
@@ -805,6 +814,11 @@ void AMechCharacter::SecondaryStopFire()
 	if (TargetingComputer != nullptr)
 	{
 		TargetingComputer->DeactivateTechComponent();
+
+		if (!bCPU && (OnTargetScanDelegate.IsBound()))
+		{
+			OnTargetScanDelegate.Broadcast(false);
+		}
 	}
 }
 
@@ -994,7 +1008,6 @@ void AMechCharacter::UpdateTargets()
 {
 	if (TargetingComputer != nullptr)
 	{
-		
 		LockedTargets = TargetingComputer->GetLockedTargets();
 		
 		// For bot
@@ -1006,7 +1019,7 @@ void AMechCharacter::UpdateTargets()
 		// Hud update
 		if (!bDead && !bCPU && OnTargetLockDelegate.IsBound())
 		{
-			OnTargetLockDelegate.Broadcast();
+			OnTargetLockDelegate.Broadcast(true);
 		}
 	}
 }
