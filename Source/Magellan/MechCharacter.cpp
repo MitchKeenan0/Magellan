@@ -1069,7 +1069,8 @@ void AMechCharacter::UpdateBot()
 	}
 	else
 	{
-		if (FMath::RandRange(0.0f, 1.0f) > 0.99f)
+		if ((LockedTargets.Num() == 0)
+			&& (FMath::RandRange(0.0f, 1.0f) > 0.9f))
 		{
 			SecondaryFire();
 		}
