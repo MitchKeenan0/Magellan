@@ -32,7 +32,7 @@ void UGunTechComponent::Fire()
 
 		// Inaccuracy
 		float TimeSinceLastFire = GetWorld()->TimeSeconds - LastFireTime;
-		float ManualFireRate = (1.0f / RateOfFire) * 2.0f;
+		float ManualFireRate = (1.0f / RateOfFire) * 1.1f;
 		if ((RunningShotCount >= ShotsBeforeSpread)
 			|| (TimeSinceLastFire <= ManualFireRate))
 		{

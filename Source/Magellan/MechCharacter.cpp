@@ -987,6 +987,11 @@ float AMechCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, 
 		if (MyController != nullptr)
 		{
 			MyController->ClientPlayCameraShake(CameraShakeOnDamage, Damage, ECameraAnimPlaySpace::CameraLocal, GetActorRotation());
+
+			if (OnDamageDelegate.IsBound())
+			{
+				OnDamageDelegate.Broadcast(Damage);
+			}
 		}
 	}
 

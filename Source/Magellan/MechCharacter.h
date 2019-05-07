@@ -14,6 +14,7 @@ class UTargetingTechComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FHitDelegate);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FReceiveLockDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDamageDelegate, float, Damage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FTargetLockDelegate, bool, bLock);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FTargetScanDelegate, bool, bOn);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FBrakeDelegate, bool, bOn);
@@ -135,6 +136,9 @@ public:
 	UFUNCTION(BlueprintCallable)
 	bool IsDead() { return bDead; }
 
+	UFUNCTION(BlueprintCallable)
+	float GetMaxHealth() { return MaxHealth; }
+
 	UFUNCTION()
 	void StartBotUpdate();
 
@@ -174,12 +178,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
 	FHitDelegate OnHitDelegate;
 	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
+	FDamageDelegate OnDamageDelegate;
+	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
 	FTargetLockDelegate OnTargetLockDelegate;
 	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
 	FReceiveLockDelegate OnReceiveLockDelegate;
 	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
 	FTargetScanDelegate OnTargetScanDelegate;
-	
+
 
 protected:
 	// Called when the game starts or when spawned
