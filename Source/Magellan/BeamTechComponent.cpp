@@ -42,38 +42,42 @@ void UBeamTechComponent::StopFire()
 
 void UBeamTechComponent::RaycastForHit()
 {
-	FHitResult Hit;
-	FVector LineStart = EmitPoint->GetComponentLocation();
+	TArray<FHitResult> Hits;
+	FVector LineStart = EmitPoint->GetComponentLocation() + (EmitPoint->GetForwardVector() * 300.0f);
 	FVector LineEnd = LineStart + (EmitPoint->GetForwardVector() * RaycastRange);
-	bool Linecast = GetWorld()->LineTraceSingleByChannel(
-		Hit,
-		LineStart,
-		LineEnd,
-		ECollisionChannel::ECC_Pawn);
-	if (Linecast)
+	FCollisionShape Shape = FCollisionShape::MakeBox(FVector(10.0f, 250.0f, 10.0f));
+
+	bool bHitBocks = GetWorld()->SweepMultiByChannel(Hits, LineStart, LineEnd, FQuat::Identity, ECollisionChannel::ECC_Visibility, Shape);
+	if (bHitBocks)
 	{
-		// Formal hit & damage
-		AMechCharacter* HitMech = Cast<AMechCharacter>(Hit.GetActor());
-		if (HitMech != nullptr)
+		int NumHits = Hits.Num();
+		if (NumHits > 0)
 		{
-			if (HitMech->GetLifeSpan() == 0.0f) /// hacky temp case for "not dead"
+			for (int i = 0; i < NumHits; i++)
 			{
-				MyMechCharacter->ConfirmHit();
+				if (Hits[i].GetActor() != MyMechCharacter)
+				{
+					// Formal hit & damage
+					AMechCharacter* HitMech = Cast<AMechCharacter>(Hits[i].GetActor());
+					if ((HitMech != nullptr) && (!HitMech->IsDead()))
+					{
+						DeliverHitTo(HitMech, Hits[i].ImpactPoint);
 
-				TSubclassOf<UDamageType> DmgType;
+						TSubclassOf<UDamageType> DmgType;
+						UGameplayStatics::ApplyDamage(HitMech, HitDamage, MyMechCharacter->GetController(), MyMechCharacter, DmgType);
 
-				UGameplayStatics::ApplyDamage(HitMech, HitDamage, MyMechCharacter->GetController(), MyMechCharacter, DmgType);
+						MyMechCharacter->ConfirmHit();
+					}
 
-				DeliverHitTo(HitMech, Hit.ImpactPoint);
+					if (MyImpactParticles != nullptr)
+					{
+						// Visuals
+						FVector Location = Hits[i].ImpactPoint;
+						FRotator Rotation = GetOwner()->GetActorForwardVector().Rotation();
+						ImpactParticles = UGameplayStatics::SpawnEmitterAttached(MyImpactParticles, GetOwner()->GetRootComponent(), NAME_None, Location, Rotation, EAttachLocation::KeepWorldPosition, true);
+					}
+				}
 			}
-		}
-
-		if (MyImpactParticles != nullptr)
-		{
-			// Visuals
-			FVector Location = Hit.ImpactPoint;
-			FRotator Rotation = GetOwner()->GetActorForwardVector().Rotation();
-			ImpactParticles = UGameplayStatics::SpawnEmitterAttached(MyImpactParticles, GetOwner()->GetRootComponent(), NAME_None, Location, Rotation, EAttachLocation::KeepWorldPosition, true);
 		}
 	}
 }

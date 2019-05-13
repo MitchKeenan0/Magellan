@@ -313,15 +313,16 @@ void AMechCharacter::MoveForward(float Value)
 	if (Value != 0.0f)
 	{
 		float LegsAngle = GetLegsToTorsoAngle();
-
-		float AlignAngleScale = FMath::Clamp(LegsAngle * 0.1f, -2.0f, 2.0f);
-		float VelAlignScale = FMath::Clamp(GetVelocity().Size(), 0.1f, 5000.0f) * 0.015f;
-		float AlignSpeed = FMath::Abs(VelAlignScale * AlignAngleScale) * 0.0015f * TorsoSpeed;
-		if (LegsAngle < -5.0f)
+		float AlignAngleScale = FMath::Clamp(LegsAngle * 0.1f, -1.0f, 1.0f);
+		float VelAlignScale = FMath::Clamp(GetVelocity().Size(), 0.1f, 1000.0f) * 0.0015f;
+		
+		float AlignSpeed = FMath::Abs(VelAlignScale * AlignAngleScale) * 0.0015f * MoveSpeed;
+		
+		if (LegsAngle < -0.0f)
 		{
 			MoveTurn(AlignSpeed);
 		}
-		else if (LegsAngle > 5.0f)
+		else if (LegsAngle > 0.0f)
 		{
 			MoveTurn(-AlignSpeed);
 		}
@@ -1106,7 +1107,7 @@ void AMechCharacter::UpdateBot()
 	// Occluded bots can update slower
 	if (!TorsoCollider->IsVisible() && bVisible)
 	{
-		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.1f, true, 0.1f); /// this needs its own value
+		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.2f, true, 0.2f); /// this needs its own value
 		bVisible = false;
 	}
 	else if (TorsoCollider->IsVisible() && !bVisible)
@@ -1195,28 +1196,33 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 		LeadFactor = GetEquippedTechActor()->GetAimAheadFactor();
 	}
 
-	// Aim ahead
-	// Above for gravity
-	float DistSqr = FMath::Square(Distance);
-	float UnitScale = 160000.0f;
-	float ValueByDistance = DistSqr * 0.1f;
-	float ExtraForSure = FMath::Sqrt(Distance);
-	float VerticalAddition = (ValueByDistance + ExtraForSure) / UnitScale;
-	TargetAimLocation.Z += LeadFactor * (VerticalAddition - 100.0f);
+	if (LeadFactor != 0.0f)
+	{
+		// Aim ahead
+		// Above for gravity
+		float DistSqr = FMath::Square(Distance);
+		float UnitScale = 160000.0f;
+		float ValueByDistance = DistSqr * 0.1f;
+		float ExtraForSure = FMath::Sqrt(Distance);
+		float VerticalAddition = (ValueByDistance + ExtraForSure) / UnitScale;
+		TargetAimLocation.Z += LeadFactor * (VerticalAddition - 100.0f);
 
-	// Ahead for velocity
-	FVector PlayerVelocity = TargetMech->GetCharacterMovement()->Velocity * 0.3f;
-	float TempScalar = FMath::Clamp(0.1f * FMath::Sqrt(Distance - 150.0f), 0.0001f, 99999.0f);
-	TargetAimLocation += LeadFactor * (PlayerVelocity * TempScalar * 0.1f);
+		// Ahead for velocity
+		FVector PlayerVelocity = TargetMech->GetCharacterMovement()->Velocity * 0.3f;
+		float TempScalar = FMath::Clamp(0.1f * FMath::Sqrt(Distance - 150.0f), 0.0001f, 99999.0f);
+		TargetAimLocation += LeadFactor * (PlayerVelocity * TempScalar * 0.1f);
 
-	// Velocity offset
-	FVector MyVelocity = GetCharacterMovement()->Velocity * 0.16f;
-	TargetAimLocation -= (LeadFactor * MyVelocity);
+		// Velocity offset
+		FVector MyVelocity = GetCharacterMovement()->Velocity * 0.16f;
+		TargetAimLocation -= (LeadFactor * MyVelocity);
+
+		TargetAimLocation += (PlayerVelocity * LeadFactor);
+	}
 
 	
 	// Lllline em up
 	FVector AimToTarget = (TargetAimLocation - GetActorLocation());
-	FVector ToPlayerSpeed = (AimToTarget + (PlayerVelocity * LeadFactor)).GetSafeNormal();
+	FVector ToPlayerSpeed = AimToTarget.GetSafeNormal();
 	FVector ToPlayerSpeedNorm = ToPlayerSpeed.GetSafeNormal();
 
 
@@ -1224,16 +1230,16 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 	FVector LateralAim = AimComponent->GetRightVector().GetSafeNormal();
 	float LateralDot = FVector::DotProduct(LateralAim, ToPlayerSpeedNorm);
 	float LateralInput = FMath::Clamp(LateralDot * 10.0f, -50.0f, 50.0f);
-	BotMouseX = FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * 50.0f);
+	BotMouseX = FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, CameraSensitivity * 1150.0f);
 
 	// Vertical mouse input
 	FVector VerticalAim = AimComponent->GetUpVector().GetSafeNormal();
 	float VerticalDot = FVector::DotProduct(VerticalAim, ToPlayerSpeedNorm);
 	float VerticalInput = FMath::Clamp((VerticalDot * 10.0f), -50.0f, 50.0f);
-	BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * 50.0f);
-
+	BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, CameraSensitivity * 1150.0f);
 
 	UpdateAim(DeltaTime);
+	UpdateTorso(DeltaTime);
 }
 
 float AMechCharacter::GetAngleToTarget()
