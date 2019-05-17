@@ -618,7 +618,7 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	}
 
 	FRotator TargetRotation = Lean;
-	FRotator InterpLean = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, TorsoSpeed);
+	FRotator InterpLean = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, TorsoSpeed * 0.3f);
 
 	FRotator DeltaRotation = InterpLean - GetActorRotation();
 	DeltaRotation.Roll = 0.0f;
@@ -1017,7 +1017,7 @@ void AMechCharacter::UpdateTargets()
 		LockedTargets = TargetingComputer->GetLockedTargets();
 		
 		// For bot
-		if ((LockedTargets.Num() > 0) && (LockedTargets[0] != nullptr))
+		if ((LockedTargets.Num() > 0) && (LockedTargets[0] != nullptr) && (TargetMech == nullptr))
 		{
 			TargetMech = Cast<AMechCharacter>(LockedTargets[0]);
 		}
@@ -1027,16 +1027,25 @@ void AMechCharacter::UpdateTargets()
 		{
 			OnTargetLockDelegate.Broadcast(true);
 		}
+
+		if ((LockedTargets.Num() == 0) && (TargetMech != nullptr))
+		{
+			TargetMech = nullptr;
+			PrimaryStopFire();
+			SecondaryStopFire();
+		}
 	}
 }
 
 void AMechCharacter::UpdateBot()
 {
+	float DeltaTime = GetWorld()->DeltaTimeSeconds;
+	
+	UpdateBotAim(DeltaTime);
+
 	if ((TargetMech != nullptr) && !TargetMech->IsDead())
 	{
-		float DeltaTime = GetWorld()->DeltaTimeSeconds;
 		
-		UpdateBotAim(DeltaTime);
 		UpdateBotMovement();
 
 		if (!bBotTriggerDown && (HasLineOfSightTo(TargetMech->GetActorLocation())) && (GetAngleToTarget() < 5.0f))
@@ -1068,40 +1077,12 @@ void AMechCharacter::UpdateBot()
 
 		
 	}
-	else
+	else if ((LockedTargets.Num() == 0) && (TargetMech == nullptr))
 	{
-		if ((LockedTargets.Num() == 0)
-			&& (FMath::RandRange(0.0f, 1.0f) > 0.9f))
+		if (FMath::RandRange(0.0f, 1.0f) > 0.5f)
 		{
 			SecondaryFire();
 		}
-
-		if (LockedTargets.Num() == 0)
-		{
-			TArray<AActor*> Mechs;
-			UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMechCharacter::StaticClass(), Mechs);
-			int MechNum = Mechs.Num();
-			if (MechNum > 0)
-			{
-				int Rando = FMath::FloorToInt(FMath::FRandRange(0.0f, (MechNum - 1.0f)));
-				AMechCharacter* MechC = Cast<AMechCharacter>(Mechs[Rando]);
-				if (MechC != nullptr)
-				{
-					// Check target is valid
-					if ((MechC != this) && !MechC->IsDead())
-					{
-						// Check team
-						if (MechC->GetTeam() != TeamID)
-						{
-							TargetMech = MechC;
-						}
-					}
-				}
-			}
-		}
-		
-		// unused- Get Player
-		//TargetMech = Cast<AMechCharacter>(UGameplayStatics::GetPlayerCharacter(GetWorld(), 0));
 	}
 
 	// Occluded bots can update slower
@@ -1115,8 +1096,6 @@ void AMechCharacter::UpdateBot()
 		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.01f); /// this needs its own value
 		bVisible = true;
 	}
-
-	//SecondaryStopFire(); // ???
 }
 
 void AMechCharacter::UpdateBotMovement()
@@ -1127,31 +1106,39 @@ void AMechCharacter::UpdateBotMovement()
 	if (TargetMech != nullptr)
 	{
 		TargetLocation = TargetMech->GetActorLocation();
-	}
-	ToTarget = (TargetLocation - GetActorLocation());
-	ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
-	
-	// Forward move
-	if (HasLineOfSightTo(TargetLocation)
-		&& (ToTarget.Size() >= 7000.0f))
-	{
-		ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
-		if (FMath::Abs(ForwardMoveValue) > 0.25f)
-		{
-			
-			BotMoveValueForward = ForwardMoveValue;
-			///MoveForward(ForwardMoveValue);
-		}
+
+		float Dist = 5000.0f + FVector::Dist(GetActorLocation(), TargetMech->GetActorLocation());
+		float DistToTarget = FMath::Clamp(Dist, 5000.0f, 35000.0f);
+		FVector Offset = FMath::VRand() * DistToTarget * Flat;
+		TargetLocation += Offset;
 	}
 
-	// Strafing move
-	else
+	ToTarget = (TargetLocation - GetActorLocation());
+	ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
+
+	// Speed sense
+	float CurrentSpeed = GetVelocity().Size();
+	if (CurrentSpeed < (TopSpeed * 0.8f))
 	{
-		LateralBias = (ToTarget).GetSafeNormal().Y - GetActorForwardVector().Y;
-		StrafeMoveValue = FMath::Clamp(LateralBias, -1.0f, 1.0f);
-		
-		BotMoveValueStrafe = StrafeMoveValue;
-		///MoveRight(StrafeMoveValue);
+		// Forward move
+		if (HasLineOfSightTo(TargetLocation)
+			&& (ToTarget.Size() >= 7000.0f))
+		{
+			ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
+			if (FMath::Abs(ForwardMoveValue) > 0.25f)
+			{
+				BotMoveValueForward = ForwardMoveValue;
+			}
+		}
+
+		// Strafing move
+		else
+		{
+			LateralBias = (ToTarget).GetSafeNormal().Y - GetActorForwardVector().Y;
+			StrafeMoveValue = FMath::Clamp(LateralBias, -1.0f, 1.0f);
+
+			BotMoveValueStrafe = StrafeMoveValue;
+		}
 	}
 
 	// Jump
@@ -1176,6 +1163,8 @@ void AMechCharacter::UpdateBotMovement()
 		BotMoveValueTurn = MoveTurnValue;
 		///MoveTurn(MoveTurnValue);
 		LastMoveLateral = MoveTurnValue;
+
+		GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, TEXT("turning..."));
 	}
 }
 
@@ -1188,15 +1177,22 @@ void AMechCharacter::BotMove()
 
 void AMechCharacter::UpdateBotAim(float DeltaTime)
 {
-	FVector		TargetAimLocation = TargetMech->GetActorLocation();
-	float		Distance = FVector::Dist(GetActorLocation(), TargetAimLocation);
-	float		LeadFactor = 0.0f;
+	// Default to "monitor" sweep
+	FVector	TargetAimLocation = GetAimPoint() + (-AimComponent->GetRightVector() * TorsoSpeed * 100.0f);
+	TargetAimLocation.Z = AimComponent->GetComponentLocation().Z;
+	
+	if (LockedTargets.IsValidIndex(0) && (TargetMech != nullptr)) {
+		TargetAimLocation = TargetMech->GetActorLocation();
+	}
+	float Distance = FVector::Dist(GetActorLocation(), TargetAimLocation);
+	float LeadFactor = 0.0f;
+	
 	if (GetEquippedTechActor() != nullptr)
 	{
 		LeadFactor = GetEquippedTechActor()->GetAimAheadFactor();
 	}
 
-	if (LeadFactor != 0.0f)
+	if ((TargetMech != nullptr) && (LeadFactor != 0.0f))
 	{
 		// Aim ahead
 		// Above for gravity
@@ -1216,7 +1212,7 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 		FVector MyVelocity = GetCharacterMovement()->Velocity * 0.16f;
 		TargetAimLocation -= (LeadFactor * MyVelocity);
 
-		TargetAimLocation += (PlayerVelocity * LeadFactor);
+		//TargetAimLocation += (PlayerVelocity * LeadFactor);
 	}
 
 	
@@ -1224,7 +1220,6 @@ void AMechCharacter::UpdateBotAim(float DeltaTime)
 	FVector AimToTarget = (TargetAimLocation - GetActorLocation());
 	FVector ToPlayerSpeed = AimToTarget.GetSafeNormal();
 	FVector ToPlayerSpeedNorm = ToPlayerSpeed.GetSafeNormal();
-
 
 	// Lateral mouse input
 	FVector LateralAim = AimComponent->GetRightVector().GetSafeNormal();
@@ -1259,33 +1254,27 @@ bool AMechCharacter::HasLineOfSightTo(FVector Location)
 {
 	bool Result = false;
 
-	if (TargetMech != nullptr)
+	// First check for team safety
+	bool bAimingAtTeammate = false;
+	if (GetEquippedTechActor() != nullptr)
 	{
-		// First check for team safety
-		bool bAimingAtTeammate = false;
-		if (GetEquippedTechActor() != nullptr)
+		bAimingAtTeammate = GetEquippedTechActor()->GetTeamSafetyOn();
+	}
+	if (!bAimingAtTeammate)
+	{
+		// Otherwise go by direct linecast
+		FHitResult Hit;
+		FVector LineStart = TorsoCollider->GetComponentLocation() + (AimComponent->GetForwardVector() * 500.0f);
+		FVector LineEnd = Location;
+		bool Linecast = GetWorld()->LineTraceSingleByChannel(
+			Hit,
+			LineStart,
+			LineEnd,
+			ECollisionChannel::ECC_Visibility);
+		
+		if (!Linecast)
 		{
-			bAimingAtTeammate = GetEquippedTechActor()->GetTeamSafetyOn();
-		}
-		if (!bAimingAtTeammate)
-		{
-
-			// Otherwise go by direct linecast
-			FHitResult Hit;
-			FVector LineStart = TorsoCollider->GetComponentLocation() + (AimComponent->GetForwardVector() * 500.0f);
-			FVector LineEnd = Location;
-			bool Linecast = GetWorld()->LineTraceSingleByChannel(
-				Hit,
-				LineStart,
-				LineEnd,
-				ECollisionChannel::ECC_Pawn);
-			if (Linecast)
-			{
-				if (Hit.Actor == TargetMech)
-				{
-					Result = true;
-				}
-			}
+			Result = true;
 		}
 	}
 
