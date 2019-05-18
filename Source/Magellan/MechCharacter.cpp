@@ -205,11 +205,24 @@ void AMechCharacter::InitMech()
 		}
 	}
 	
-	Torso->SetOwnerNoSee(true);
-	GetMesh()->SetOwnerNoSee(true);
+	if (!bThirdPerson)
+	{
+		Torso->SetOwnerNoSee(true);
+		GetMesh()->SetOwnerNoSee(true);
 
+		OffsetCamera(FVector::ZeroVector, FRotator::ZeroRotator, PlayerFOV);
+	}
+	else
+	{
+		SpringArmComp->TargetArmLength = ThirdPersonDistance;
+		SpringArmComp->SetRelativeLocation(ThirdPersonOffset);
+
+		OffsetCamera(ThirdPersonOffset, FRotator::ZeroRotator, PlayerFOV);
+	}
+
+	InitOptions();
 	TrimOutfit();
-	OffsetCamera(FVector::ZeroVector, FRotator::ZeroRotator, PlayerFOV);
+
 	GetController()->SetControlRotation(GetActorRotation());
 
 	FOutputDraw IdleDraw;
@@ -224,9 +237,11 @@ void AMechCharacter::StartBotUpdate()
 	{
 		EquipChoice = 1;
 	}
+	
 	EquipSelection(EquipChoice);
 
-	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.01f); /// this needs its own value
+	// Bot update
+	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.1f, true, 0.1f); /// this needs its own value
 }
 void AMechCharacter::StopBotUpdate()
 {
@@ -316,7 +331,7 @@ void AMechCharacter::MoveForward(float Value)
 		float AlignAngleScale = FMath::Clamp(LegsAngle * 0.1f, -1.0f, 1.0f);
 		float VelAlignScale = FMath::Clamp(GetVelocity().Size(), 0.1f, 1000.0f) * 0.0015f;
 		
-		float AlignSpeed = FMath::Abs(VelAlignScale * AlignAngleScale) * 0.0015f * MoveSpeed;
+		float AlignSpeed = FMath::Abs(VelAlignScale * AlignAngleScale) * 0.015f * TorsoSpeed;
 		
 		if (LegsAngle < -0.0f)
 		{
@@ -472,13 +487,21 @@ void AMechCharacter::StartScope()
 {
 	if (!bDead)
 	{
-		CameraComp->FieldOfView = ScopeFOV;
+		FVector ScopePosition = AimComponent->GetRelativeTransform().GetLocation().ForwardVector * 1000.0f; /// to do change this
+		OffsetCamera(ScopePosition, FRotator::ZeroRotator, ScopeFOV);
 	}
 }
 
 void AMechCharacter::EndScope()
 {
-	CameraComp->FieldOfView = PlayerFOV;
+	if (bThirdPerson)
+	{
+		OffsetCamera(ThirdPersonOffset, FRotator::ZeroRotator, PlayerFOV);
+	}
+	else
+	{
+		OffsetCamera(FVector::ZeroVector, FRotator::ZeroRotator, PlayerFOV);
+	}
 }
 
 void AMechCharacter::EquipSelection(float Value)
@@ -567,6 +590,7 @@ void AMechCharacter::UpdateAim(float DeltaTime)
 	FRotator Current = AimComponent->GetRelativeTransform().Rotator();
 	AimRotation = FMath::RInterpTo(Current, AimRotation, DeltaTime, CameraSensitivity * 10.0f);
 	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -70.0f, 80.0f);
+	AimRotation.Roll = GetActorRotation().Roll * -0.5f;
 	
 	AimComponent->SetRelativeRotation(AimRotation);
 }
@@ -577,6 +601,7 @@ void AMechCharacter::UpdateTorso(float DeltaTime)
 	FRotator CurrentR = TorsoCollider->GetRelativeTransform().Rotator();
 	FRotator InterpRotator = FMath::RInterpTo(CurrentR, AimRotation, DeltaTime, TorsoSpeed);
 	InterpRotator.Pitch = FMath::Clamp(InterpRotator.Pitch, TorsoMinPitch, TorsoMaxPitch);
+	InterpRotator.Roll *= -0.8f;
 	
 	TorsoCollider->SetRelativeRotation(InterpRotator);
 }
@@ -595,7 +620,7 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	// Initial rotation
 	Lean.Pitch = DotToVelocityForward * -MoveTilt;
 	Lean.Yaw = GetActorRotation().Yaw;
-	Lean.Roll = LastMoveLateral * MoveTilt;
+	Lean.Roll = DotToVelocityRight * MoveTilt; ///LastMoveLateral * MoveTilt;
 
 	// Velocity mapped 0.0 -- 1.0
 	float a1 = 1.0f;
@@ -621,10 +646,10 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	FRotator InterpLean = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, TorsoSpeed * 0.3f);
 
 	FRotator DeltaRotation = InterpLean - GetActorRotation();
-	DeltaRotation.Roll = 0.0f;
+	DeltaRotation.Roll = (DeltaRotation.Roll * -0.0314f);
 
 	SetActorRotation(InterpLean);
-	AimComponent->AddRelativeRotation(DeltaRotation * -1.0f);
+	AimComponent->AddRelativeRotation(DeltaRotation * -0.8f);
 }
 
 void AMechCharacter::UpdateTelemetry(float DeltaTime)
@@ -734,6 +759,11 @@ FVector AMechCharacter::GetLookVector()
 	if (HitResult && !(Hit.Actor->ActorHasTag(NAME_MyFName)))
 	{
 		Result = Hit.ImpactPoint;
+	}
+
+	if (bThirdPerson)
+	{
+		Result += ThirdPersonOffset;
 	}
 
 	return Result;
@@ -1088,12 +1118,12 @@ void AMechCharacter::UpdateBot()
 	// Occluded bots can update slower
 	if (!TorsoCollider->IsVisible() && bVisible)
 	{
-		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.2f, true, 0.2f); /// this needs its own value
+		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.5f, true, 0.5f); /// this needs its own value
 		bVisible = false;
 	}
 	else if (TorsoCollider->IsVisible() && !bVisible)
 	{
-		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.01f, true, 0.01f); /// this needs its own value
+		GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, this, &AMechCharacter::UpdateBot, 0.1f, true, 0.1f); /// this needs its own value
 		bVisible = true;
 	}
 }

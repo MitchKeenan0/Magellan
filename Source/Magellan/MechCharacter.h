@@ -374,6 +374,15 @@ protected:
 	float ScopeFOV = 30.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	bool bThirdPerson = true;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	float ThirdPersonDistance = 800.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
+	FVector ThirdPersonOffset = FVector::ZeroVector;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float CameraSensitivity = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
