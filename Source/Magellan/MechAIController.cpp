@@ -83,6 +83,8 @@ void AMechAIController::BotAim(float DeltaTime)
 
 void AMechAIController::UpdateBot(float DeltaTime)
 {
+	///GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::White, TEXT("Updating bot..."));
+	
 	UpdateBotAim(DeltaTime);
 	UpdateBotMovement();
 
