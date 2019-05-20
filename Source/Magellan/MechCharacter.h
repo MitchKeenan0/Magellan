@@ -7,7 +7,6 @@
 #include "TechActor.h"
 #include "PlayerIDWidgetComponent.h"
 #include "MechOutfitComponent.h"
-///#include "PaperSpriteComponent.h"
 #include "MechCharacter.generated.h"
 
 class UTargetingTechComponent;
@@ -81,9 +80,11 @@ private:
 
 
 public:
-	// Sets default values for this character's properties
+
 	AMechCharacter();
 
+	
+	// Remote controls
 	UFUNCTION(BlueprintCallable)
 	void InitOptions();
 
@@ -108,6 +109,28 @@ public:
 	UFUNCTION()
 	void DestructMech();
 
+	UFUNCTION()
+	void EquipSelection(float Value);
+
+	UFUNCTION()
+	void BotPrimaryTrigger(bool FireState);
+
+	UFUNCTION()
+	void BotSecondaryTrigger(bool FireState);
+
+	UFUNCTION()
+	void BotJumpTrigger(bool Value);
+
+	UFUNCTION()
+	void BotAimTo(FRotator AimRotation);
+
+	
+	// Getters
+	UFUNCTION()
+	USceneComponent* GetAimComponent() { return AimComponent; }
+
+	UFUNCTION()
+	float GetAngleToTarget();
 
 	UFUNCTION(BlueprintCallable)
 	FVector GetLookVector();
@@ -117,6 +140,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	FVector GetTorsoPoint();
+
+	UFUNCTION(BlueprintCallable)
+	ATechActor* GetEquippedTechActor();
 
 	UFUNCTION(BlueprintCallable)
 	AMechCharacter* GetTargetMech() { return TargetMech; }
@@ -139,21 +165,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	float GetMaxHealth() { return MaxHealth; }
 
-	UFUNCTION()
-	void StartBotUpdate();
-
-	UFUNCTION()
-	void StopBotUpdate();
-
-	UFUNCTION()
-	void UpdateBotMovement();
-
-	UFUNCTION()
-	void BotMove();
-
-	UFUNCTION()
-	void UpdateBotAim(float DeltaTime);
-
 	UFUNCTION(BlueprintCallable)
 	FString GetMechName() { return MechName; }
 
@@ -163,9 +174,6 @@ public:
 
 	UFUNCTION()
 	void TestFunction(bool bOn);
-
-	/*UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
-	FTestDelegate OnTestDelegate;*/
 
 	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
 	FBrakeDelegate OnBrakeDelegate;
@@ -186,32 +194,16 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "TestDelegate")
 	FTargetScanDelegate OnTargetScanDelegate;
 
+	UPROPERTY(BlueprintReadOnly)
+	FTimerHandle PlayerUpdateTimer;
+
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	virtual float TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
-
-	UPROPERTY(BlueprintReadOnly)
-	FTimerHandle BotUpdateTimer;
-
-	UPROPERTY(BlueprintReadOnly)
-	FTimerHandle PlayerUpdateTimer;
-
-	/*UPROPERTY(BlueprintReadOnly)
-	FTimerHandle BotUpdateTimer;*/
-
-	UFUNCTION()
-	void UpdateAim(float DeltaTime);
-
-	UFUNCTION()
-	void UpdatePlayer();
-
-	UFUNCTION(BlueprintCallable)
-	void UpdateBot();
 
 	void MoveRight(float Value);
 	void MoveForward(float Value);
@@ -222,7 +214,7 @@ protected:
 	void EndBrake();
 	void Dodge();
 	void CentreMech();
-	void EquipSelection(float Value);
+	
 	void StartScope();
 	void EndScope();
 
@@ -231,9 +223,13 @@ protected:
 	void SecondaryFire();
 	void SecondaryStopFire();
 
-	float GetAngleToTarget();
-
 	void UpdateLean(float DeltaTime);
+
+	UFUNCTION()
+	void UpdateAim(float DeltaTime);
+
+	UFUNCTION()
+	void UpdatePlayer();
 	
 	UFUNCTION()
 	void UpdateTelemetry(float DeltaTime);
@@ -251,9 +247,6 @@ protected:
 	ATechActor* GetTechActor(int EquipIndex);
 
 	UFUNCTION(BlueprintCallable)
-	ATechActor* GetEquippedTechActor();
-
-	UFUNCTION(BlueprintCallable)
 	UMechOutfitComponent* GetOutfit() { return Outfit; } /// oh my god Beckyy
 
 	UFUNCTION(BlueprintCallable)
@@ -269,6 +262,7 @@ protected:
 	void InitMech();
 
 
+	// Unreal components
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	USceneComponent* AimComponent;
 
@@ -294,7 +288,7 @@ protected:
 	UPlayerIDWidgetComponent* PlayerIDComp;
 	
 
-	// Reference UMG Asset in the Editor
+	// Hud
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> HudWidgetClass;
 
@@ -304,7 +298,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 	TSubclassOf<class UUserWidget> DeathWidgetClass;
 
-	// Variable to hold the widget After Creating it.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UUserWidget* MyHud;
 
@@ -314,6 +307,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UUserWidget* MyDeathScreen;
 
+	
+	// Damage/Destruct
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UParticleSystem* DestructParticles;
 
@@ -324,10 +319,7 @@ protected:
 	TSubclassOf<UCameraShake> CameraShakeOnDamage;
 
 
-
-	/*UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
-	UPaperSpriteComponent* ControlPanelSprite;*/
-
+	// Character stats
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	float PlayerUpdateRate = 0.01f;
 
@@ -445,27 +437,6 @@ private:
 	int TeamID = 0;
 
 	UPROPERTY()
-	float BotMoveValueForward = 0.0f;
-
-	UPROPERTY()
-	float BotMoveValueStrafe = 0.0f;
-
-	UPROPERTY()
-	float BotMoveValueTurn = 0.0f;
-
-	UPROPERTY()
-	bool bBotTriggerDown = false;
-
-	UPROPERTY()
-	float TimeAtTriggerDown = 0.0f;
-
-	UPROPERTY()
-	float TimeAtTriggerUp = 0.0f;
-
-	UPROPERTY()
-	float BotBurstDuration = 1.0f;
-
-	UPROPERTY()
 	bool bBraking = false;
 
 	UPROPERTY()
@@ -476,12 +447,6 @@ private:
 
 	UPROPERTY()
 	float TelemetryTimer = 0.0f;
-
-	UPROPERTY()
-	float BotMouseX = 0.0f;
-
-	UPROPERTY()
-	float BotMouseY = 0.0f;
 
 	UPROPERTY()
 	AMechCharacter* TargetMech = nullptr;
