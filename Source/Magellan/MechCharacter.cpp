@@ -276,6 +276,8 @@ void AMechCharacter::Tick(float DeltaTime)
 		if (!bCPU)
 		{
 			UpdateAim(DeltaTime);
+			UpdateScope();
+
 			TelemetryTimer += DeltaTime;
 		}
 	}
@@ -502,20 +504,43 @@ void AMechCharacter::StartScope()
 {
 	if (!bDead)
 	{
-		FVector ScopePosition = AimComponent->GetRelativeTransform().GetLocation().ForwardVector * 1000.0f; /// to do change this
-		OffsetCamera(ScopePosition, FRotator::ZeroRotator, ScopeFOV);
+		bScoping = true;
 	}
 }
 
 void AMechCharacter::EndScope()
 {
-	if (bThirdPerson)
+	bScoping = false;
+}
+
+void AMechCharacter::UpdateScope()
+{
+	float CurrentFOV = CameraComp->FieldOfView;
+	float Vignette = CameraComp->PostProcessSettings.VignetteIntensity;
+
+	if (bScoping)
 	{
-		OffsetCamera(ThirdPersonOffset, FRotator::ZeroRotator, PlayerFOV);
+		FVector ScopePosition = AimComponent->GetRelativeTransform().GetLocation().ForwardVector * 1000.0f; /// to do change this
+		
+		float InterpFOV = FMath::FInterpTo(CurrentFOV, ScopeFOV, GetWorld()->DeltaTimeSeconds, 15.0f);
+		InterpFOV = FMath::Clamp(InterpFOV, ScopeFOV, PlayerFOV);
+		OffsetCamera(ScopePosition, FRotator::ZeroRotator, InterpFOV);
+
+		float InterpVignette = FMath::FInterpTo(Vignette, 2.0f, GetWorld()->DeltaTimeSeconds, 15.0f);
+		CameraComp->PostProcessSettings.VignetteIntensity = InterpVignette;
 	}
-	else
+	else if (CurrentFOV != PlayerFOV)
 	{
-		OffsetCamera(FVector::ZeroVector, FRotator::ZeroRotator, PlayerFOV);
+		if (bThirdPerson)
+		{
+			OffsetCamera(ThirdPersonOffset, FRotator::ZeroRotator, PlayerFOV);
+		}
+		else
+		{
+			OffsetCamera(FVector::ZeroVector, FRotator::ZeroRotator, PlayerFOV);
+		}
+
+		CameraComp->PostProcessSettings.VignetteIntensity = 0.0f;
 	}
 }
 

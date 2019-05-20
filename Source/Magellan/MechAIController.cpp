@@ -88,6 +88,8 @@ void AMechAIController::UpdateBot(float DeltaTime)
 
 	if ((TargetMech != nullptr) && !TargetMech->IsDead())
 	{
+		MyMechCharacter->BotSecondaryTrigger(false);
+		
 		if (!bBotTriggerDown && (MyMechCharacter->HasLineOfSightTo(TargetMech->GetActorLocation())) && (MyMechCharacter->GetAngleToTarget() < 5.0f))
 		{
 			float RestTime = GetWorld()->TimeSeconds - TimeAtTriggerUp;
@@ -117,10 +119,9 @@ void AMechAIController::UpdateBot(float DeltaTime)
 
 
 	}
-
-	if (TargetMech == nullptr)
+	else if (TargetMech == nullptr)
 	{
-		if (FMath::RandRange(0.0f, 1.0f) > 0.5f)
+		if (FMath::RandRange(0.0f, 1.0f) > 0.8f)
 		{
 			MyMechCharacter->BotSecondaryTrigger(true);
 		}

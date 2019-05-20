@@ -211,6 +211,9 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	FTimerHandle PlayerUpdateTimer;
 
+	/*UPROPERTY(BlueprintReadOnly)
+	FTimerHandle ScopeTransitionTimer;*/
+
 
 protected:
 	virtual void BeginPlay() override;
@@ -229,6 +232,7 @@ protected:
 	
 	void StartScope();
 	void EndScope();
+	void UpdateScope();
 
 	void PrimaryFire();
 	void PrimaryStopFire();
@@ -447,6 +451,9 @@ private:
 
 	UPROPERTY()
 	bool bBraking = false;
+
+	UPROPERTY()
+	bool bScoping = false;
 
 	UPROPERTY()
 	float LastMoveForward = 0.0f;
