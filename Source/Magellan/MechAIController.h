@@ -21,6 +21,9 @@ public:
 protected:
 	// Propterties
 	UPROPERTY(EditAnywhere)
+	float BotUpdatePeriod = 0.1f;
+
+	UPROPERTY(EditAnywhere)
 	float LookSpeed = 0.3f;
 
 

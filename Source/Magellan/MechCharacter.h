@@ -73,8 +73,6 @@ private:
 	UPROPERTY()
 	float InternalMoveSpeed = 0.0f;
 
-	void UpdateTorso(float DeltaTime);
-
 	UFUNCTION(BlueprintCallable)
 	TArray<ATechActor*> GetBuilderTechByTag(FName Tag);
 
@@ -171,6 +169,22 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetMechName(FString Value);
 
+	
+	UFUNCTION()
+	void UpdateAim(float DeltaTime);
+
+	UFUNCTION()
+	void UpdateTorso(float DeltaTime);
+
+	UFUNCTION()
+	void MoveRight(float Value);
+
+	UFUNCTION()
+	void MoveForward(float Value);
+
+	UFUNCTION()
+	void MoveTurn(float Value);
+
 
 	UFUNCTION()
 	void TestFunction(bool bOn);
@@ -205,9 +219,7 @@ protected:
 
 	virtual float TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
-	void MoveRight(float Value);
-	void MoveForward(float Value);
-	void MoveTurn(float Value);
+	
 	void StartJump();
 	void EndJump();
 	void StartBrake();
@@ -224,9 +236,6 @@ protected:
 	void SecondaryStopFire();
 
 	void UpdateLean(float DeltaTime);
-
-	UFUNCTION()
-	void UpdateAim(float DeltaTime);
 
 	UFUNCTION()
 	void UpdatePlayer();

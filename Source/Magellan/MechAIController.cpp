@@ -54,8 +54,7 @@ void AMechAIController::StartBotUpdate()
 	MyMechCharacter->EquipSelection(EquipChoice);
 
 	// Bot update
-	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, FTimerDelegate::CreateUObject(this, &AMechAIController::UpdateBot, 0.1f), 0.1f, true);
-	//MyTimerManager->SetTimer(TimerHandle,					FTimerDelegate::CreateUObject(this, &MyClass::TimeDelayFunction, FloatVar, bBoolVar), Delay);
+	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, FTimerDelegate::CreateUObject(this, &AMechAIController::UpdateBot, BotUpdatePeriod), BotUpdatePeriod, true);
 }
 
 void AMechAIController::StopBotUpdate()
@@ -211,9 +210,9 @@ void AMechAIController::UpdateBotMovement()
 
 void AMechAIController::BotMove()
 {
-	///MoveForward(BotMoveValueForward);
-	///MoveRight(BotMoveValueStrafe);
-	///MoveTurn(BotMoveValueTurn);
+	MyMechCharacter->MoveForward(BotMoveValueForward);
+	MyMechCharacter->MoveRight(BotMoveValueStrafe);
+	MyMechCharacter->MoveTurn(BotMoveValueTurn);
 }
 
 void AMechAIController::UpdateBotAim(float DeltaTime)
@@ -278,6 +277,6 @@ void AMechAIController::UpdateBotAim(float DeltaTime)
 	}
 	
 
-	//UpdateAim(DeltaTime);
-	//UpdateTorso(DeltaTime);
+	MyMechCharacter->UpdateAim(DeltaTime);
+	MyMechCharacter->UpdateTorso(DeltaTime);
 }

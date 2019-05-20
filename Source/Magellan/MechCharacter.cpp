@@ -327,7 +327,7 @@ void AMechCharacter::MoveRight(float Value)
 	if (((Value < 0.0f) && (GetLegsToTorsoAngle() > 0.0f))
 		|| ((Value > 0.0f) && (GetLegsToTorsoAngle() < 0.0f)))
 	{
-		MoveTurn(Value);
+		MoveTurn(Value * 0.1f);
 	}
 
 	/// for dodge direction
