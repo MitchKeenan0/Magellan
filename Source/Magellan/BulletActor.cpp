@@ -71,9 +71,12 @@ void ABulletActor::LaunchBullet()
 {
 	ProjectileMovement->Velocity += GetActorForwardVector() * ProjectileSpeed;
 
-	float RScalar = FMath::FRandRange(-1.0f, 1.0f) * RotationSpeed;
-	FRotator Rando = FMath::VRand().Rotation() * RScalar;
-	RotatingMovement->RotationRate = Rando;
+	if (RotationSpeed != 0.0f)
+	{
+		float RScalar = FMath::FRandRange(-1.0f, 1.0f) * RotationSpeed;
+		FRotator Rando = FMath::VRand().Rotation() * RScalar;
+		RotatingMovement->RotationRate = Rando;
+	}
 }
 
 void ABulletActor::LineTraceForHit()
@@ -93,11 +96,15 @@ void ABulletActor::LineTraceForHit()
 	}
 
 	float DeltaTime = GetWorld()->DeltaTimeSeconds;
+	
+	// Pew pew
 	FVector RaycastVector = ProjectileMovement->Velocity * DeltaTime;
+	if (RaycastVector == FVector::ZeroVector) {
+		RaycastVector = GetActorForwardVector() * DeltaTime;
+	}
 	FVector Start = GetActorLocation();
 	FVector End = Start + RaycastVector;
 
-	// Pew pew
 	HitResult = UKismetSystemLibrary::LineTraceSingleForObjects(
 		this,
 		Start,
@@ -108,7 +115,7 @@ void ABulletActor::LineTraceForHit()
 		EDrawDebugTrace::None,
 		Hit,
 		true,
-		FLinearColor::White, FLinearColor::Red, 0.1f);
+		FLinearColor::White, FLinearColor::Red, 1.0f);
 
 	static const FName NAME_MyFName(TEXT("Ammo"));
 	if (HitResult && (!Hit.Actor->ActorHasTag(NAME_MyFName)))

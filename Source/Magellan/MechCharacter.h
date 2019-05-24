@@ -145,6 +145,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	AMechCharacter* GetTargetMech() { return TargetMech; }
 
+	/// get locked targets
+
 	UFUNCTION()
 	bool HasLineOfSightTo(FVector Location);
 
@@ -287,6 +289,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	UBoxComponent* LegCollider;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Body")
+	UParticleSystemComponent* GroundParticles;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Body")
 	UMechOutfitComponent* Outfit;

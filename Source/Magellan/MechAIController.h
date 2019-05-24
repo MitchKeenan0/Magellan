@@ -18,6 +18,9 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UFUNCTION(BlueprintCallable)
+	void InitMechBot(AMechCharacter* Mech);
+
 protected:
 	// Propterties
 	UPROPERTY(EditAnywhere)
@@ -26,6 +29,12 @@ protected:
 	UPROPERTY(EditAnywhere)
 	float LookSpeed = 0.3f;
 
+	UPROPERTY(EditAnywhere)
+	float PreferredMoveSpeedMin = 500.0f;
+
+	UPROPERTY(EditAnywhere)
+	float PreferredMoveSpeedMax = 1500.0f;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FString> BotNames;
@@ -33,9 +42,6 @@ protected:
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-
-	UFUNCTION(BlueprintCallable)
-	void InitMechBot(AMechCharacter* Mech);
 
 	UFUNCTION()
 	void StartBotUpdate();

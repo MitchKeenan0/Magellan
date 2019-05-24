@@ -23,6 +23,9 @@ AMechCharacter::AMechCharacter()
 	Torso = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Torso"));
 	Torso->AttachToComponent(TorsoCollider, FAttachmentTransformRules::KeepRelativeTransform);
 
+	GroundParticles = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("GroundParticles"));
+	GroundParticles->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+
 	Outfit = CreateDefaultSubobject<UMechOutfitComponent>(TEXT("Outfit"));
 
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArmComp"));
@@ -245,7 +248,7 @@ void AMechCharacter::InitMech()
 
 		OffsetCamera(FVector::ZeroVector, FRotator::ZeroRotator, PlayerFOV);
 	}
-	else
+	else if (!bCPU)
 	{
 		SpringArmComp->TargetArmLength = ThirdPersonDistance;
 		SpringArmComp->SetRelativeLocation(ThirdPersonOffset);
@@ -329,7 +332,7 @@ void AMechCharacter::MoveRight(float Value)
 	if (((Value < 0.0f) && (GetLegsToTorsoAngle() > 0.0f))
 		|| ((Value > 0.0f) && (GetLegsToTorsoAngle() < 0.0f)))
 	{
-		MoveTurn(Value * 0.1f);
+		MoveTurn(Value * 0.15f);
 	}
 
 	/// for dodge direction
@@ -630,6 +633,8 @@ void AMechCharacter::UpdateAim(float DeltaTime)
 void AMechCharacter::BotAimTo(FRotator AimRotation)
 {
 	AimComponent->SetRelativeRotation(AimRotation);
+
+	GetAltitude();
 }
 
 void AMechCharacter::UpdateTorso(float DeltaTime)
@@ -652,13 +657,18 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	FVector MyForward = GetActorForwardVector().GetSafeNormal();
 	float DotToVelocityForward = FVector::DotProduct(MyVelocity, MyForward);
 	FVector MyRight = GetActorRightVector().GetSafeNormal();
-	float DotToVelocityRight = FVector::DotProduct(MyVelocity, MyRight);
+	float DotToVelocityRight = FVector::DotProduct(MyVelocity, MyRight) + (LastMoveLateral * 0.5f);
+	if (DotToVelocityRight == 0.0f)
+	{
+		float SideVelocity = FMath::Clamp(GetCharacterMovement()->Velocity.ForwardVector.Y * 0.001f, -1.0f, 1.0f);
+		DotToVelocityRight = SideVelocity;
+	}
 
 	// Initial rotation
+	Lean.Roll = DotToVelocityRight * MoveTilt; ///LastMoveLateral * MoveTilt;
 	Lean.Pitch = DotToVelocityForward * -MoveTilt;
 	Lean.Yaw = GetActorRotation().Yaw;
-	Lean.Roll = DotToVelocityRight * MoveTilt; ///LastMoveLateral * MoveTilt;
-
+	
 	// Velocity mapped 0.0 -- 1.0
 	float a1 = 1.0f;
 	float a2 = TopSpeed;
@@ -666,7 +676,7 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	float b1 = 0.01f;
 	float b2 = 1.0f;
 	float t = b1 + (((s - a1) * (b2 - b1)) / (a2 - a1));
-	float ScaledVelocity = FMath::Sqrt(t);
+	float ScaledVelocity = t; ///  FMath::Sqrt(t);
 
 	Lean.Pitch *= ScaledVelocity;
 	Lean.Roll *= ScaledVelocity;
@@ -680,7 +690,7 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	}
 
 	FRotator TargetRotation = Lean;
-	FRotator InterpLean = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, TorsoSpeed * 0.3f);
+	FRotator InterpLean = FMath::RInterpTo(GetActorRotation(), TargetRotation, DeltaTime, TurnSpeed);
 
 	FRotator DeltaRotation = InterpLean - GetActorRotation();
 	DeltaRotation.Roll = (DeltaRotation.Roll * -0.0314f);
@@ -717,7 +727,7 @@ float AMechCharacter::GetAltitude()
 	IgnoredActors.Add(this->GetOwner());
 
 	FVector RaycastVector = (FVector::UpVector * -99000.0f);
-	FVector Start = GetActorLocation();
+	FVector Start = GetActorLocation(); /// from the feet
 	FVector End = Start + RaycastVector;
 
 	// Raycast down
@@ -735,10 +745,22 @@ float AMechCharacter::GetAltitude()
 
 	if (HitResult)
 	{
-		float Distance = FVector::Dist(GetActorLocation(), Hit.ImpactPoint) * 0.02f;
-		if (FMath::Abs(Distance) > 4.0f)
+		float Distance = (FVector::Dist(GetActorLocation(), Hit.ImpactPoint) * 0.02f) - 4; /// terrible hardcode!
+		
+		Result = Distance;
+
+		// Airborne
+		if (FMath::Abs(Distance) > 3.0f)
 		{
-			Result = Distance;
+			GroundParticles->SetVisibility(false);
+		}
+
+		// Grounded
+		else if (GroundParticles != nullptr)
+		{
+			GroundParticles->SetWorldRotation(Hit.ImpactNormal.Rotation());
+
+			GroundParticles->SetVisibility(true);
 		}
 	}
 
@@ -922,32 +944,35 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 
 void AMechCharacter::InitOptions()
 {
-	int numTechs = AvailableTech.Num();
-	if (numTechs > 0)
+	if (Outfit->HardpointTechs.Num() == 0)
 	{
-		Outfit->HardpointTechs.Init(nullptr, numTechs);
-		//AvailableTechPointers.Init(nullptr, numTechs);
-
-		FActorSpawnParameters SpawnInfo;
-		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-		for (int i = 0; i < numTechs; ++i)
+		int numTechs = AvailableTech.Num();
+		if (numTechs > 0)
 		{
-			if (AvailableTech[i] != nullptr)
-			{
-				ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[i], SpawnInfo);
-				if (NewTech != nullptr)
-				{
-					AvailableTechPointers.Insert(NewTech, i);
+			Outfit->HardpointTechs.Init(nullptr, numTechs);
 
-					if (i < 2) /// Replace 2 with actual Hardpoints
+			FActorSpawnParameters SpawnInfo;
+			SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			for (int i = 0; i < numTechs; ++i)
+			{
+				if (AvailableTech[i] != nullptr)
+				{
+					ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[i], SpawnInfo);
+					if (NewTech != nullptr)
 					{
-						BuildTech(i, i);
+						AvailableTechPointers.Insert(NewTech, i);
+
+						if (i < 2) // Replace 2 with actual Hardpoints number -- safely
+						{
+							BuildTech(i, i);
+						}
 					}
 				}
 			}
 		}
 	}
+	
 
 	// Targeting
 	int NumTargeters = TargetingTech.Num();

@@ -28,7 +28,7 @@ void UGunTechComponent::Fire()
 	if (Capacity > 0.0f)
 	{
 		FActorSpawnParameters SpawnInfo;
-		FRotator ShotRotation = EmitPoint->GetComponentRotation();
+		FRotator ShotRotation = EmitPoint->GetForwardVector().Rotation();
 
 		// Inaccuracy
 		float TimeSinceLastFire = GetWorld()->TimeSeconds - LastFireTime;

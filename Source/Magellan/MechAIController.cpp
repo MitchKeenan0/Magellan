@@ -14,6 +14,7 @@ void AMechAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	BotAim(DeltaTime);
 	BotMove();
 }
 
@@ -63,30 +64,15 @@ void AMechAIController::StopBotUpdate()
 	MyMechCharacter->BotPrimaryTrigger(false);
 }
 
-void AMechAIController::BotAim(float DeltaTime)
-{
-	// Get Mouse inputs
-	float X = BotMouseX;
-	float Y = BotMouseY;
-
-	// Aim rotation
-	FRotator InitialAimRotation = MyMechCharacter->GetAimPoint().Rotation();
-	FRotator MRotator = InitialAimRotation + (FRotator(Y, X, 0.0f) * LookSpeed);
-	MRotator = FMath::RInterpTo(InitialAimRotation, MRotator, DeltaTime, LookSpeed * 10.0f);
-	
-	// Clamping
-	MRotator.Pitch = FMath::Clamp(MRotator.Pitch, -70.0f, 80.0f);
-	MRotator.Roll = MyMechCharacter->GetActorRotation().Roll * -0.5f;
-
-	MyMechCharacter->BotAimTo(MRotator);
-}
-
 void AMechAIController::UpdateBot(float DeltaTime)
 {
 	///GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::White, TEXT("Updating bot..."));
 	
 	UpdateBotAim(DeltaTime);
 	UpdateBotMovement();
+
+	//MyMechCharacter->UpdateAim(DeltaTime);
+	MyMechCharacter->UpdateTorso(DeltaTime);
 
 	if ((TargetMech != nullptr) && !TargetMech->IsDead())
 	{
@@ -121,11 +107,18 @@ void AMechAIController::UpdateBot(float DeltaTime)
 
 
 	}
-	else if (TargetMech == nullptr)
+	else 
 	{
-		if (FMath::RandRange(0.0f, 1.0f) > 0.8f)
+		if ((MyMechCharacter->GetTargetMech() == nullptr))/// && (MyMechCharacter->)
 		{
-			MyMechCharacter->BotSecondaryTrigger(true);
+			if (FMath::RandRange(0.0f, 1.0f) > 0.8f)
+			{
+				MyMechCharacter->BotSecondaryTrigger(true);
+			}
+		}
+		else
+		{
+			TargetMech = MyMechCharacter->GetTargetMech();
 		}
 	}
 
@@ -164,24 +157,35 @@ void AMechAIController::UpdateBotMovement()
 	// Forward move
 	if (MyMechCharacter->HasLineOfSightTo(TargetLocation) || (TargetMech == nullptr))
 	{
-		ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
-		if (TargetMech == nullptr)
+		if (MyMechCharacter->GetVelocity().Size() < FMath::FRandRange(PreferredMoveSpeedMin, PreferredMoveSpeedMax))
 		{
-			ForwardMoveValue *= 0.015f;
+			ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
+			if (TargetMech == nullptr)
+			{
+				ForwardMoveValue *= 0.015f;
+			}
+			if (FMath::Abs(ForwardMoveValue) > 0.1f)
+			{
+				BotMoveValueForward = ForwardMoveValue;
+			}
 		}
-		if (FMath::Abs(ForwardMoveValue) > 0.1f)
+		else
 		{
-			BotMoveValueForward = ForwardMoveValue;
+			BotMoveValueForward = 0.0f;
 		}
 	}
 
 	// Strafing move
-	else
+	else if (MyMechCharacter->GetVelocity().Size() < FMath::FRandRange(PreferredMoveSpeedMin, PreferredMoveSpeedMax))
 	{
 		LateralBias = (ToTarget).GetSafeNormal().Y - MyForward.Y;
 		StrafeMoveValue = FMath::Clamp(LateralBias, -1.0f, 1.0f);
 
 		BotMoveValueStrafe = StrafeMoveValue;
+	}
+	else
+	{
+		BotMoveValueStrafe = 0.0f;
 	}
 
 	// Jump
@@ -206,8 +210,6 @@ void AMechAIController::UpdateBotMovement()
 		BotMoveValueTurn = MoveTurnValue;
 		///MoveTurn(MoveTurnValue);
 		LastMoveLateral = MoveTurnValue;
-
-		GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, TEXT("turning..."));
 	}
 }
 
@@ -221,14 +223,14 @@ void AMechAIController::BotMove()
 void AMechAIController::UpdateBotAim(float DeltaTime)
 {
 	FVector MyLocation = MyMechCharacter->GetActorLocation();
-	FVector	TargetAimLocation = MyMechCharacter->GetAimPoint();
-
+	
+	FVector	TargetAimLocation = MyLocation + MyMechCharacter->GetAimComponent()->GetForwardVector();
 	if ((TargetMech != nullptr)) {
 		TargetAimLocation = TargetMech->GetActorLocation();
 	}
+
 	float Distance = FVector::Dist(MyLocation, TargetAimLocation);
 	float LeadFactor = 0.0f;
-
 	if (MyMechCharacter->GetEquippedTechActor() != nullptr)
 	{
 		LeadFactor = MyMechCharacter->GetEquippedTechActor()->GetAimAheadFactor();
@@ -258,28 +260,38 @@ void AMechAIController::UpdateBotAim(float DeltaTime)
 
 
 	// Lllline em up
-	FVector AimToTarget = (TargetAimLocation - MyLocation);
-	FVector ToPlayerSpeed = AimToTarget.GetSafeNormal();
-	FVector ToPlayerSpeedNorm = ToPlayerSpeed.GetSafeNormal();
-
-	// Aim
 	USceneComponent* MyAimComponent = MyMechCharacter->GetAimComponent();
 	if (MyAimComponent != nullptr)
 	{
+		// Get the angle to target
+		FVector TargetNorm = ((TargetAimLocation - MyLocation)).GetSafeNormal();
+		FVector LookForward = (MyAimComponent->GetForwardVector()).GetSafeNormal();
+		float Dot = FVector::DotProduct(TargetNorm * Flat, LookForward * Flat);
+		float RoughAngle = FMath::RadiansToDegrees(FMath::Acos(Dot));
+		float YawDirection = FMath::Clamp(MyAimComponent->RelativeRotation.Yaw, -1.0f, 1.0f);
+		float AngleToTarget = (RoughAngle * YawDirection) * -1.0f;
+
 		// Lateral mouse input
-		FVector LateralAim = MyAimComponent->GetRightVector().GetSafeNormal();
-		float LateralDot = FVector::DotProduct(LateralAim, ToPlayerSpeedNorm);
-		float LateralInput = FMath::Clamp(LateralDot * 10.0f, -50.0f, 50.0f);
-		BotMouseX = FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, LookSpeed * 1150.0f);
+		/*FVector LateralAim = MyAimComponent->GetRightVector().GetSafeNormal();
+		float LateralDot = FVector::DotProduct(LateralAim, TargetNorm);
+		float LateralInput = FMath::Clamp(LateralDot * 10.0f, -50.0f, 50.0f);*/
+		BotMouseX = FMath::FInterpConstantTo(BotMouseX, AngleToTarget, DeltaTime, LookSpeed); // LateralInput
 
 		// Vertical mouse input
 		FVector VerticalAim = MyAimComponent->GetUpVector().GetSafeNormal();
-		float VerticalDot = FVector::DotProduct(VerticalAim, ToPlayerSpeedNorm);
+		float VerticalDot = FVector::DotProduct(VerticalAim, TargetNorm);
 		float VerticalInput = FMath::Clamp((VerticalDot * 10.0f), -50.0f, 50.0f);
-		BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, LookSpeed * 1150.0f);
+		BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, LookSpeed);
 	}
-	
+}
 
-	MyMechCharacter->UpdateAim(DeltaTime);
-	MyMechCharacter->UpdateTorso(DeltaTime);
+void AMechAIController::BotAim(float DeltaTime)
+{
+	FRotator MRotator = (FRotator(BotMouseY, BotMouseX, 0.0f) * LookSpeed);
+
+	// Clamping
+	MRotator.Pitch = FMath::Clamp(MRotator.Pitch, -70.0f, 80.0f);
+	MRotator.Roll = MyMechCharacter->GetActorRotation().Roll * -0.5f;
+
+	MyMechCharacter->BotAimTo(MRotator);
 }
