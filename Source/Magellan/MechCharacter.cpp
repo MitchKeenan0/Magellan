@@ -298,7 +298,7 @@ void AMechCharacter::UpdatePlayer()
 	}
 }
 
-// Called to bind functionality to input
+// Input
 void AMechCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -547,6 +547,7 @@ void AMechCharacter::UpdateScope()
 	}
 }
 
+// Equip select & Tech actor
 void AMechCharacter::EquipSelection(float Value)
 {
 	if (Value != 0.0f)
@@ -657,7 +658,7 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	FVector MyForward = GetActorForwardVector().GetSafeNormal();
 	float DotToVelocityForward = FVector::DotProduct(MyVelocity, MyForward);
 	FVector MyRight = GetActorRightVector().GetSafeNormal();
-	float DotToVelocityRight = FVector::DotProduct(MyVelocity, MyRight) + (LastMoveLateral * 0.5f);
+	float DotToVelocityRight = FVector::DotProduct(MyVelocity, MyRight) + (LastMoveLateral * 0.25f);
 	if (DotToVelocityRight == 0.0f)
 	{
 		float SideVelocity = FMath::Clamp(GetCharacterMovement()->Velocity.ForwardVector.Y * 0.001f, -1.0f, 1.0f);
@@ -914,7 +915,7 @@ void AMechCharacter::SecondaryStopFire()
 
 void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 {
-	if (AvailableTechPointers.Num() >= (TechID + 1))
+	if (AvailableTechPointers.IsValidIndex(TechID)) ///  && (AvailableTechPointers.Num() >= (TechID + 1))
 	{
 		ATechActor* NewTechType = AvailableTechPointers[TechID];
 		if (NewTechType != nullptr)
@@ -925,6 +926,13 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 			ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[TechID], SpawnInfo);
 			if (NewTech != nullptr)
 			{
+				// Attach to mech
+				if (Outfit->HardpointTechs[TechHardpoint] != nullptr)
+				{
+					Outfit->HardpointTechs[TechHardpoint]->Destroy();
+					Outfit->HardpointTechs.RemoveAt(TechHardpoint);
+				}
+				
 				Outfit->HardpointTechs.Insert(NewTech, TechHardpoint);
 				
 				///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Fitted new tech"));
@@ -942,28 +950,41 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 	}
 }
 
+void AMechCharacter::SaveChoice(int TechID, int HardpointIndex)
+{
+	UMechSaveGame* SaveGameInstance = Cast<UMechSaveGame>(UGameplayStatics::CreateSaveGameObject(UMechSaveGame::StaticClass()));
+
+	SaveGameInstance->Hardpoints[HardpointIndex] = TechID;
+	SaveGameInstance->bChanged = true;
+
+	UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->SaveSlotName, SaveGameInstance->UserIndex);
+	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, FString::Printf(TEXT("Saved tech %i in slot %i"), TechID, HardpointIndex));
+}
+
 void AMechCharacter::InitOptions()
 {
+	FActorSpawnParameters SpawnInfo;
+	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	// Initalize loadout
 	if (Outfit->HardpointTechs.Num() == 0)
 	{
-		int numTechs = AvailableTech.Num();
-		if (numTechs > 0)
+		int numAvailable = AvailableTech.Num();
+		if (numAvailable > 0)
 		{
-			Outfit->HardpointTechs.Init(nullptr, numTechs);
+			Outfit->HardpointTechs.Init(nullptr, numAvailable);
 
-			FActorSpawnParameters SpawnInfo;
-			SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-			for (int i = 0; i < numTechs; ++i)
+			for (int i = 0; i != numAvailable; ++i)
 			{
 				if (AvailableTech[i] != nullptr)
 				{
+
 					ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[i], SpawnInfo);
 					if (NewTech != nullptr)
 					{
 						AvailableTechPointers.Insert(NewTech, i);
 
-						if (i < 2) // Replace 2 with actual Hardpoints number -- safely
+						if (i < 2)
 						{
 							BuildTech(i, i);
 						}
@@ -973,14 +994,45 @@ void AMechCharacter::InitOptions()
 		}
 	}
 	
+	// Load mech data
+	UMechSaveGame* LoadGameInstance = Cast<UMechSaveGame>(UGameplayStatics::CreateSaveGameObject(UMechSaveGame::StaticClass()));
+	LoadGameInstance = Cast<UMechSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->SaveSlotName, LoadGameInstance->UserIndex));
+	if ((LoadGameInstance != nullptr)
+		&& (LoadGameInstance->bChanged == true))
+	{
+		// Update loadout
+		TArray<int32> SavedHardpoints = LoadGameInstance->Hardpoints;
+		int NumHardpoints = SavedHardpoints.Num();
 
-	// Targeting
+		for (int32 Index = 0; Index != NumHardpoints; ++Index)
+		{
+			int Choice = SavedHardpoints[Index];
+
+			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::White, FString::Printf(TEXT("Reading tech %i in slot %i"), Choice, Index));
+
+			if (AvailableTech.IsValidIndex(Choice) && (AvailableTech[Choice] != nullptr))
+			{
+				ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[Choice], SpawnInfo);
+				if (NewTech != nullptr)
+				{
+					if (Index < NumHardpoints)
+					{
+						if (Outfit->HardpointTechs.IsValidIndex(Index))
+						{
+							RemovePart(0, Index);
+						}
+
+						BuildTech(Choice, Index);
+					}
+				}
+			}
+		}
+	}
+
+	// Targeting computer
 	int NumTargeters = TargetingTech.Num();
 	if (NumTargeters > 0)
 	{
-		FActorSpawnParameters SpawnInfo;
-		SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
 		if (TargetingTech[0] != nullptr)
 		{
 			TargetingComputer = NewObject<UTargetingTechComponent>(this, *TargetingTech[0]);
@@ -994,6 +1046,9 @@ void AMechCharacter::InitOptions()
 			}
 		}
 	}
+
+	// Output
+	///
 }
 
 TArray<ATechActor*> AMechCharacter::GetBuilderTechByTag(FName Tag)
@@ -1003,8 +1058,7 @@ TArray<ATechActor*> AMechCharacter::GetBuilderTechByTag(FName Tag)
 	int numTechPtrs = AvailableTechPointers.Num();
 	if (numTechPtrs > 0)
 	{
-		// Compare against existing tech
-		for (int i = 0; i < numTechPtrs; ++i)
+		for (int i = 0; i != numTechPtrs; ++i)
 		{
 			ATechActor* ThisTech = AvailableTechPointers[i];
 			if ((ThisTech != nullptr) && ThisTech->ActorHasTag(Tag))
@@ -1029,7 +1083,7 @@ void AMechCharacter::TrimOutfit()
 	int NumTechs = AvailableTechPointers.Num();
 	if (NumTechs > 0)
 	{
-		for (int i = 0; i < NumTechs; ++i)
+		for (int i = 0; i != NumTechs; ++i)
 		{
 			if (AvailableTechPointers[i] != nullptr)
 			{
@@ -1044,7 +1098,7 @@ void AMechCharacter::TrimOutfit()
 void AMechCharacter::RemovePart(int TechID, int HardpointIndex)
 {
 	int NumTechs = Outfit->HardpointTechs.Num();
-	if (NumTechs >= (HardpointIndex + 1))
+	if (Outfit->HardpointTechs.IsValidIndex(HardpointIndex) && (NumTechs >= (HardpointIndex + 1)))
 	{
 		if (Outfit->HardpointTechs[HardpointIndex] != nullptr)
 		{

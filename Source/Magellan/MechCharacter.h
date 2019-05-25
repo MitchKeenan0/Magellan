@@ -87,6 +87,9 @@ public:
 	void InitOptions();
 
 	UFUNCTION(BlueprintCallable)
+	void SaveChoice(int TechID, int HardpointIndex);
+
+	UFUNCTION(BlueprintCallable)
 	void BuildTech(int TechID, int TechHardpoint);
 
 	UFUNCTION(BlueprintCallable)
