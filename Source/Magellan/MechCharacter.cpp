@@ -950,15 +950,23 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 	}
 }
 
-void AMechCharacter::SaveChoice(int TechID, int HardpointIndex)
+void AMechCharacter::SaveChoice(TArray<int32> TechIDs, int HardpointIndex)
 {
 	UMechSaveGame* SaveGameInstance = Cast<UMechSaveGame>(UGameplayStatics::CreateSaveGameObject(UMechSaveGame::StaticClass()));
-
-	SaveGameInstance->Hardpoints[HardpointIndex] = TechID;
+	
+	// Save each hardpoint tech
+	for (int i = 0; i < TechIDs.Num(); i++)
+	{
+		if (TechIDs.IsValidIndex(i))
+		{
+			SaveGameInstance->Hardpoints[i] = TechIDs[i];
+		}
+	}
+	
+	// Mark save file as changed
 	SaveGameInstance->bChanged = true;
 
 	UGameplayStatics::SaveGameToSlot(SaveGameInstance, SaveGameInstance->SaveSlotName, SaveGameInstance->UserIndex);
-	GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, FString::Printf(TEXT("Saved tech %i in slot %i"), TechID, HardpointIndex));
 }
 
 void AMechCharacter::InitOptions()
@@ -974,7 +982,7 @@ void AMechCharacter::InitOptions()
 		{
 			Outfit->HardpointTechs.Init(nullptr, numAvailable);
 
-			for (int i = 0; i != numAvailable; ++i)
+			for (int i = 0; i < numAvailable; ++i)
 			{
 				if (AvailableTech[i] != nullptr)
 				{
@@ -996,33 +1004,29 @@ void AMechCharacter::InitOptions()
 	
 	// Load mech data
 	UMechSaveGame* LoadGameInstance = Cast<UMechSaveGame>(UGameplayStatics::CreateSaveGameObject(UMechSaveGame::StaticClass()));
-	LoadGameInstance = Cast<UMechSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->SaveSlotName, LoadGameInstance->UserIndex));
-	if ((LoadGameInstance != nullptr)
-		&& (LoadGameInstance->bChanged == true))
+	if (UGameplayStatics::DoesSaveGameExist(LoadGameInstance->SaveSlotName, LoadGameInstance->UserIndex))
 	{
-		// Update loadout
-		TArray<int32> SavedHardpoints = LoadGameInstance->Hardpoints;
-		int NumHardpoints = SavedHardpoints.Num();
-
-		for (int32 Index = 0; Index != NumHardpoints; ++Index)
+		LoadGameInstance = Cast<UMechSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->SaveSlotName, LoadGameInstance->UserIndex));
+		bool bLoad = LoadGameInstance->bChanged;
+		if (bLoad)
 		{
-			int Choice = SavedHardpoints[Index];
-
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::White, FString::Printf(TEXT("Reading tech %i in slot %i"), Choice, Index));
-
-			if (AvailableTech.IsValidIndex(Choice) && (AvailableTech[Choice] != nullptr))
+			// Update loadout
+			TArray<int32> SavedHardpoints = LoadGameInstance->Hardpoints;
+			int NumHardpoints = SavedHardpoints.Num();
+			
+			for (int32 Index = 0; Index < NumHardpoints; ++Index)
 			{
-				ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[Choice], SpawnInfo);
-				if (NewTech != nullptr)
+				int Choice = LoadGameInstance->Hardpoints[Index];
+				
+				if (AvailableTech.IsValidIndex(Choice) && (AvailableTech[Choice] != nullptr))
 				{
-					if (Index < NumHardpoints)
+					ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[Choice], SpawnInfo);
+					if (NewTech != nullptr)
 					{
-						if (Outfit->HardpointTechs.IsValidIndex(Index))
+						if (Index < 2)
 						{
-							RemovePart(0, Index);
+							BuildTech(Choice, Index);
 						}
-
-						BuildTech(Choice, Index);
 					}
 				}
 			}

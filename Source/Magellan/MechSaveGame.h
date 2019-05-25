@@ -33,10 +33,8 @@ class MAGELLAN_API UMechSaveGame : public USaveGame
 	UPROPERTY(VisibleAnywhere, Category = Basic)
 	FString PlayerName;
 
-
 	UPROPERTY(VisibleAnywhere, Category = Basic)
 	TArray<int32> Hardpoints;
-
 
 	UPROPERTY(VisibleAnywhere, Category = Basic)
 	uint32 TargetingComputer;
