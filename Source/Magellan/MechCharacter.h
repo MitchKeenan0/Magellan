@@ -123,7 +123,7 @@ public:
 	void BotJumpTrigger(bool Value);
 
 	UFUNCTION()
-	void BotAimTo(FRotator AimRotation);
+	void BotAimTo(float X, float Y);
 
 	
 	// Getters

@@ -529,7 +529,7 @@ void AMechCharacter::UpdateScope()
 		InterpFOV = FMath::Clamp(InterpFOV, ScopeFOV, PlayerFOV);
 		OffsetCamera(ScopePosition, FRotator::ZeroRotator, InterpFOV);
 
-		float InterpVignette = FMath::FInterpTo(Vignette, 2.0f, GetWorld()->DeltaTimeSeconds, 15.0f);
+		float InterpVignette = FMath::FInterpTo(Vignette, 2.0f, GetWorld()->DeltaTimeSeconds, 10.0f);
 		CameraComp->PostProcessSettings.VignetteIntensity = InterpVignette;
 	}
 	else if (CurrentFOV != PlayerFOV)
@@ -631,8 +631,19 @@ void AMechCharacter::UpdateAim(float DeltaTime)
 	AimComponent->SetRelativeRotation(AimRotation);
 }
 
-void AMechCharacter::BotAimTo(FRotator AimRotation)
+void AMechCharacter::BotAimTo(float X, float Y)
 {
+	// Aim rotation
+	FRotator MRotator = FRotator(Y, X, 0.0f) * CameraSensitivity;
+	AimComponent->AddRelativeRotation(MRotator);
+	FRotator AimRotation = AimComponent->GetRelativeTransform().Rotator();
+	FRotator Current = AimComponent->GetRelativeTransform().Rotator();
+
+	float DeltaTime = GetWorld()->DeltaTimeSeconds;
+	AimRotation = FMath::RInterpTo(Current, AimRotation, DeltaTime, CameraSensitivity * 10.0f);
+	AimRotation.Pitch = FMath::Clamp(AimRotation.Pitch, -70.0f, 80.0f);
+	AimRotation.Roll = GetActorRotation().Roll * -0.5f;
+
 	AimComponent->SetRelativeRotation(AimRotation);
 
 	GetAltitude();
@@ -975,18 +986,17 @@ void AMechCharacter::InitOptions()
 	SpawnInfo.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	// Initalize loadout
-	if (Outfit->HardpointTechs.Num() == 0)
+	if (AvailableTechPointers.Num() == 0) /// Outfit->HardpointTechs.Num()
 	{
 		int numAvailable = AvailableTech.Num();
 		if (numAvailable > 0)
 		{
-			Outfit->HardpointTechs.Init(nullptr, numAvailable);
+			Outfit->HardpointTechs.Init(nullptr, numAvailable); // this is the wrong capacity. Should be 2!!
 
 			for (int i = 0; i < numAvailable; ++i)
 			{
 				if (AvailableTech[i] != nullptr)
 				{
-
 					ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[i], SpawnInfo);
 					if (NewTech != nullptr)
 					{
@@ -1002,30 +1012,32 @@ void AMechCharacter::InitOptions()
 		}
 	}
 	
-	// Load mech data
-	UMechSaveGame* LoadGameInstance = Cast<UMechSaveGame>(UGameplayStatics::CreateSaveGameObject(UMechSaveGame::StaticClass()));
-	if (UGameplayStatics::DoesSaveGameExist(LoadGameInstance->SaveSlotName, LoadGameInstance->UserIndex))
+	if (!bCPU)
 	{
-		LoadGameInstance = Cast<UMechSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->SaveSlotName, LoadGameInstance->UserIndex));
-		bool bLoad = LoadGameInstance->bChanged;
-		if (bLoad)
+		// Load mech data
+		UMechSaveGame* LoadGameInstance = Cast<UMechSaveGame>(UGameplayStatics::CreateSaveGameObject(UMechSaveGame::StaticClass()));
+		if (UGameplayStatics::DoesSaveGameExist(LoadGameInstance->SaveSlotName, LoadGameInstance->UserIndex))
 		{
-			// Update loadout
-			TArray<int32> SavedHardpoints = LoadGameInstance->Hardpoints;
-			int NumHardpoints = SavedHardpoints.Num();
-			
-			for (int32 Index = 0; Index < NumHardpoints; ++Index)
+			LoadGameInstance = Cast<UMechSaveGame>(UGameplayStatics::LoadGameFromSlot(LoadGameInstance->SaveSlotName, LoadGameInstance->UserIndex));
+			bool bLoad = LoadGameInstance->bChanged;
+			if (bLoad)
 			{
-				int Choice = LoadGameInstance->Hardpoints[Index];
-				
-				if (AvailableTech.IsValidIndex(Choice) && (AvailableTech[Choice] != nullptr))
+				// Update loadout
+				TArray<int32> SavedHardpoints = LoadGameInstance->Hardpoints;
+				int NumHardpoints = SavedHardpoints.Num();
+
+				for (int32 Index = 0; Index < NumHardpoints; ++Index)
 				{
-					ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[Choice], SpawnInfo);
-					if (NewTech != nullptr)
+					int Choice = LoadGameInstance->Hardpoints[Index];
+					if (AvailableTech.IsValidIndex(Choice) && (AvailableTech[Choice] != nullptr))
 					{
-						if (Index < 2)
+						ATechActor* NewTech = GetWorld()->SpawnActor<ATechActor>(AvailableTech[Choice], SpawnInfo);
+						if (NewTech != nullptr)
 						{
-							BuildTech(Choice, Index);
+							if (Index < 2)
+							{
+								BuildTech(Choice, Index);
+							}
 						}
 					}
 				}
@@ -1223,6 +1235,10 @@ bool AMechCharacter::HasLineOfSightTo(FVector Location)
 			ECollisionChannel::ECC_Visibility);
 		
 		if (!Linecast)
+		{
+			Result = true;
+		}
+		else if ((TargetMech != nullptr) && (Hit.GetActor() == TargetMech))
 		{
 			Result = true;
 		}

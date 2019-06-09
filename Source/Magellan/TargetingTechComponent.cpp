@@ -61,95 +61,53 @@ void UTargetingTechComponent::UpdateTargets()
 
 void UTargetingTechComponent::RaycastForHit()
 {
-	TArray<FHitResult> DirectHits;
-	TArray<FHitResult> Hits;
-	FVector LineStart = EmitPoint->GetComponentLocation() + (EmitPoint->GetForwardVector() * 500.0f);
-	FVector LineEnd = EmitPoint->GetForwardVector() * RaycastRange;
-	FQuat Rote = MyMechCharacter->GetAimPoint().Rotation().Quaternion();
-	Rote.W = 45.0f;
-	FCollisionShape Shape = FCollisionShape::MakeBox(FVector(500.0f, 1050.0f, 1050.0f));
-
-	bool Test = GetWorld()->LineTraceMultiByChannel(DirectHits, LineStart, LineStart + LineEnd, ECollisionChannel::ECC_Visibility);
-	bool bHitBocks = GetWorld()->SweepMultiByChannel(Hits, LineStart, LineEnd, Rote, ECollisionChannel::ECC_Visibility, Shape);
-	
-	if (Test)
+	// Dot check for all mech characters
+	TArray<AActor*> Actors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AMechCharacter::StaticClass(), Actors);
+	int NumActors = Actors.Num();
+	if (NumActors > 1)
 	{
-		int NumDirectHits = DirectHits.Num();
-		if (NumDirectHits > 0)
+		for (int i = 0; i < NumActors; i++)
 		{
-			for (int i = 0; i < NumDirectHits; i++)
+			if (Actors.IsValidIndex(i))
 			{
-				AMechCharacter* HitMech = Cast<AMechCharacter>(DirectHits[i].GetActor());
+				AMechCharacter* HitMech = Cast<AMechCharacter>(Actors[i]);
 				if ((HitMech != nullptr) && (HitMech != MyMechCharacter) && !HitMech->IsDead())
 				{
 					if (HitMech->GetTeam() != MyMechCharacter->GetTeam())
 					{
-						// Decide whether to add target
-						bool bAdd = true;
-						int NumTargets = LockedTargets.Num();
-						if (NumTargets > 0)
+						
+						// Check angle to aim point
+						FVector ToMech = (HitMech->GetActorLocation() - MyMechCharacter->GetActorLocation()).GetSafeNormal();
+						FVector ToAim = MyMechCharacter->GetAimComponent()->GetForwardVector().GetSafeNormal();
+						float DotToMech = FVector::DotProduct(ToAim, ToMech);
+						if (DotToMech >= 0.9f)
 						{
-							// Check for duplicate
-							for (auto& Attotor : LockedTargets)
+							// Avoid duplicates
+							bool bAdd = true;
+							int NumTargets = LockedTargets.Num();
+							if (NumTargets > 0)
 							{
-								if (HitMech == Attotor)
+								// Check for duplicate
+								for (auto& Attotor : LockedTargets)
 								{
-									bAdd = false;
+									if (HitMech == Attotor)
+									{
+										bAdd = false;
+									}
 								}
 							}
-						}
 
-						// Target aquired
-						if (bAdd &&
-							(NumTargets < MaxTargets))
-						{
-							LockedTargets.Add(HitMech);
-
-							HitMech->ReceiveLock();
-						}
-					}
-
-				}
-			}
-		}
-	}
-	else if (bHitBocks)
-	{
-		int NumHits = Hits.Num();
-		if (NumHits > 0)
-		{
-			for (int i = 0; i < NumHits; i++)
-			{
-				AMechCharacter* HitMech = Cast<AMechCharacter>(Hits[i].GetActor());
-				if ((HitMech != nullptr) && (HitMech != MyMechCharacter) && !HitMech->IsDead())
-				{
-					if (HitMech->GetTeam() != MyMechCharacter->GetTeam())
-					{
-						// Decide whether to add target
-						bool bAdd = true;
-						int NumTargets = LockedTargets.Num();
-						if (NumTargets > 0)
-						{
-							// Check for duplicate
-							for (auto& Attotor : LockedTargets)
+							// Target aquired
+							if (bAdd &&
+								(NumTargets < MaxTargets))
 							{
-								if (HitMech == Attotor)
-								{
-									bAdd = false;
-								}
+								LockedTargets.Add(HitMech);
+
+								HitMech->ReceiveLock();
 							}
 						}
-
-						// Target aquired
-						if (bAdd &&
-							(NumTargets < MaxTargets))
-						{
-							LockedTargets.Add(HitMech);
-
-							HitMech->ReceiveLock();
-						}
 					}
-					
 				}
 			}
 		}

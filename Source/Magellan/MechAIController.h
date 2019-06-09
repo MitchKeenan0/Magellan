@@ -35,6 +35,9 @@ protected:
 	UPROPERTY(EditAnywhere)
 	float PreferredMoveSpeedMax = 1500.0f;
 
+	UPROPERTY(EditAnywhere)
+	float PatrolRange = 15000.0f;
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FString> BotNames;
@@ -64,6 +67,13 @@ protected:
 	UFUNCTION()
 	void BotAim(float DeltaTime);
 
+	UFUNCTION()
+	void UpdateBotPatrol();
+
+	// Returns true if our agent has met the patrol checkpoint
+	UFUNCTION()
+	bool CheckPatrol();
+
 	UPROPERTY(BlueprintReadOnly)
 	FTimerHandle BotUpdateTimer;
 
@@ -89,6 +99,12 @@ private:
 
 	UPROPERTY()
 	AMechCharacter* TargetMech = nullptr;
+
+	UPROPERTY()
+	FVector PatrolLookVector;
+
+	UPROPERTY()
+	FVector PatrolMoveVector;
 
 
 	UPROPERTY()
@@ -124,6 +140,9 @@ private:
 	FVector TargetLocation = FVector::ZeroVector;
 
 	UPROPERTY()
+	FVector TargetMoveLocation = FVector::ZeroVector;
+
+	UPROPERTY()
 	FVector ToTarget = FVector::ZeroVector;
 
 	UPROPERTY()
@@ -131,9 +150,6 @@ private:
 
 	UPROPERTY()
 	FVector ToHeadingRight = FVector::ZeroVector;
-
-	UPROPERTY()
-	float ForwardMoveValue = 0.0f;
 
 	UPROPERTY()
 	float LateralBias = 0.0f;

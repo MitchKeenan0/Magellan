@@ -39,6 +39,7 @@ void AMechAIController::InitMechBot(AMechCharacter* Mech)
 			MyMechCharacter->SetMechName(NewHandle);
 		}
 
+		UpdateBotPatrol();
 		StartBotUpdate();
 	}
 }
@@ -53,6 +54,8 @@ void AMechAIController::StartBotUpdate()
 	}
 
 	MyMechCharacter->EquipSelection(EquipChoice);
+
+	UpdateBotPatrol();
 
 	// Bot update
 	GetWorld()->GetTimerManager().SetTimer(BotUpdateTimer, FTimerDelegate::CreateUObject(this, &AMechAIController::UpdateBot, BotUpdatePeriod), BotUpdatePeriod, true);
@@ -69,12 +72,12 @@ void AMechAIController::UpdateBot(float DeltaTime)
 	///GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::White, TEXT("Updating bot..."));
 	
 	UpdateBotAim(DeltaTime);
+
+	MyMechCharacter->UpdateTorso(DeltaTime); /// this also calls Update Lean for bots
+
 	UpdateBotMovement();
 
-	//MyMechCharacter->UpdateAim(DeltaTime);
-	MyMechCharacter->UpdateTorso(DeltaTime);
-
-	if ((TargetMech != nullptr) && !TargetMech->IsDead())
+	if (TargetMech != nullptr)
 	{
 		MyMechCharacter->BotSecondaryTrigger(false);
 		
@@ -105,16 +108,22 @@ void AMechAIController::UpdateBot(float DeltaTime)
 			}
 		}
 
-
+		if (TargetMech->IsDead())
+		{
+			TargetMech = nullptr;
+		}
 	}
 	else 
 	{
-		if ((MyMechCharacter->GetTargetMech() == nullptr))/// && (MyMechCharacter->)
+		// Patrol
+		if (CheckPatrol())
 		{
-			if (FMath::RandRange(0.0f, 1.0f) > 0.8f)
-			{
-				MyMechCharacter->BotSecondaryTrigger(true);
-			}
+			UpdateBotPatrol();
+		}
+
+		if (MyMechCharacter->GetTargetMech() == nullptr)
+		{
+			MyMechCharacter->BotSecondaryTrigger(true);
 		}
 		else
 		{
@@ -140,43 +149,34 @@ void AMechAIController::UpdateBotMovement()
 	// Rotation ingredients
 	FVector MyLocation = MyMechCharacter->GetActorLocation();
 	FVector MyForward = MyMechCharacter->GetActorForwardVector();
-	TargetLocation = MyForward;
+	
+	TargetMoveLocation = PatrolMoveVector;
+	
 	if (TargetMech != nullptr)
 	{
-		TargetLocation = TargetMech->GetActorLocation();
+		TargetMoveLocation = TargetMech->GetActorLocation();
 
-		float Dist = 5000.0f + FVector::Dist(MyLocation, TargetMech->GetActorLocation());
-		float DistToTarget = FMath::Clamp(Dist, 5000.0f, 35000.0f);
+		float Dist = 1000.0f + FVector::Dist(MyLocation, TargetMech->GetActorLocation());
+		float DistToTarget = FMath::Clamp(Dist, 1000.0f, 5000.0f);
 		FVector Offset = FMath::VRand() * DistToTarget * Flat;
-		TargetLocation += Offset;
+		TargetMoveLocation += Offset;
 	}
 
-	ToTarget = (TargetLocation - MyLocation);
+	ToTarget = (TargetMoveLocation - MyLocation);
 	ToTargetNorm = (ToTarget * Flat).GetSafeNormal();
 
 	// Forward move
-	if (MyMechCharacter->HasLineOfSightTo(TargetLocation) || (TargetMech == nullptr))
+	if (MyMechCharacter->GetVelocity().Size() <= FMath::FRandRange(PreferredMoveSpeedMin, PreferredMoveSpeedMax))
 	{
-		if (MyMechCharacter->GetVelocity().Size() < FMath::FRandRange(PreferredMoveSpeedMin, PreferredMoveSpeedMax))
-		{
-			ForwardMoveValue = FMath::Clamp(ToTarget.Size(), -1.0f, 1.0f);
-			if (TargetMech == nullptr)
-			{
-				ForwardMoveValue *= 0.015f;
-			}
-			if (FMath::Abs(ForwardMoveValue) > 0.1f)
-			{
-				BotMoveValueForward = ForwardMoveValue;
-			}
-		}
-		else
-		{
-			BotMoveValueForward = 0.0f;
-		}
+		BotMoveValueForward = 1.0f;
+	}
+	else
+	{
+		BotMoveValueForward = 0.0f;
 	}
 
 	// Strafing move
-	else if (MyMechCharacter->GetVelocity().Size() < FMath::FRandRange(PreferredMoveSpeedMin, PreferredMoveSpeedMax))
+	if (MyMechCharacter->GetVelocity().Size() < FMath::FRandRange(PreferredMoveSpeedMin, PreferredMoveSpeedMax))
 	{
 		LateralBias = (ToTarget).GetSafeNormal().Y - MyForward.Y;
 		StrafeMoveValue = FMath::Clamp(LateralBias, -1.0f, 1.0f);
@@ -189,8 +189,9 @@ void AMechAIController::UpdateBotMovement()
 	}
 
 	// Jump
-	if ((TargetMech != nullptr) && !MyMechCharacter->GetCharacterMovement()->IsFalling()
+	if (((TargetMech != nullptr) && !MyMechCharacter->GetCharacterMovement()->IsFalling()
 		&& (FMath::FRandRange(0.0f, 1.0f) > 0.9f))
+		|| ((PatrolMoveVector - MyMechCharacter->GetActorLocation()).Z >= 300.0f))
 	{
 		MyMechCharacter->BotJumpTrigger(true);
 	}
@@ -201,7 +202,7 @@ void AMechAIController::UpdateBotMovement()
 	}
 
 	// Turning move
-	ToHeadingRight = (MyMechCharacter->GetActorRightVector() * Flat).GetSafeNormal();
+	/*ToHeadingRight = (MyMechCharacter->GetActorRightVector() * Flat).GetSafeNormal();
 	DotToTargetRight = FVector::DotProduct(ToHeadingRight, ToTargetNorm);
 	if (FMath::Abs(DotToTargetRight) > 1.0f)
 	{
@@ -210,7 +211,9 @@ void AMechAIController::UpdateBotMovement()
 		BotMoveValueTurn = MoveTurnValue;
 		///MoveTurn(MoveTurnValue);
 		LastMoveLateral = MoveTurnValue;
-	}
+
+		BotMouseX += (-MoveTurnValue);
+	}*/
 }
 
 void AMechAIController::BotMove()
@@ -224,8 +227,10 @@ void AMechAIController::UpdateBotAim(float DeltaTime)
 {
 	FVector MyLocation = MyMechCharacter->GetActorLocation();
 	
-	FVector	TargetAimLocation = MyLocation + MyMechCharacter->GetAimComponent()->GetForwardVector();
-	if ((TargetMech != nullptr)) {
+	FVector	TargetAimLocation = PatrolLookVector;
+	
+	if (TargetMech != nullptr)
+	{
 		TargetAimLocation = TargetMech->GetActorLocation();
 	}
 
@@ -263,35 +268,72 @@ void AMechAIController::UpdateBotAim(float DeltaTime)
 	USceneComponent* MyAimComponent = MyMechCharacter->GetAimComponent();
 	if (MyAimComponent != nullptr)
 	{
-		// Get the angle to target
 		FVector TargetNorm = ((TargetAimLocation - MyLocation)).GetSafeNormal();
-		FVector LookForward = (MyAimComponent->GetForwardVector()).GetSafeNormal();
-		float Dot = FVector::DotProduct(TargetNorm * Flat, LookForward * Flat);
-		float RoughAngle = FMath::RadiansToDegrees(FMath::Acos(Dot));
-		float YawDirection = FMath::Clamp(MyAimComponent->RelativeRotation.Yaw, -1.0f, 1.0f);
-		float AngleToTarget = (RoughAngle * YawDirection) * -1.0f;
+
 
 		// Lateral mouse input
-		/*FVector LateralAim = MyAimComponent->GetRightVector().GetSafeNormal();
+		FVector LateralAim = MyAimComponent->GetRightVector().GetSafeNormal();
 		float LateralDot = FVector::DotProduct(LateralAim, TargetNorm);
-		float LateralInput = FMath::Clamp(LateralDot * 10.0f, -50.0f, 50.0f);*/
-		BotMouseX = FMath::FInterpConstantTo(BotMouseX, AngleToTarget, DeltaTime, LookSpeed); // LateralInput
+		float LateralInput = FMath::Clamp(LateralDot * 10.0f, -1.0f, 1.0f);
+		BotMouseX = LateralInput; /// FMath::FInterpConstantTo(BotMouseX, LateralInput, DeltaTime, LookSpeed);
 
-		// Vertical mouse input
+		// Target within view
 		FVector VerticalAim = MyAimComponent->GetUpVector().GetSafeNormal();
 		float VerticalDot = FVector::DotProduct(VerticalAim, TargetNorm);
-		float VerticalInput = FMath::Clamp((VerticalDot * 10.0f), -50.0f, 50.0f);
-		BotMouseY = FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, LookSpeed);
+		float VerticalInput = FMath::Clamp((VerticalDot * 10.0f), -1.0f, 1.0f);
+		BotMouseY = VerticalInput; ///FMath::FInterpConstantTo(BotMouseY, VerticalInput, DeltaTime, LookSpeed);
 	}
 }
 
 void AMechAIController::BotAim(float DeltaTime)
 {
-	FRotator MRotator = (FRotator(BotMouseY, BotMouseX, 0.0f) * LookSpeed);
+	MyMechCharacter->BotAimTo(BotMouseX, BotMouseY);
+}
 
-	// Clamping
-	MRotator.Pitch = FMath::Clamp(MRotator.Pitch, -70.0f, 80.0f);
-	MRotator.Roll = MyMechCharacter->GetActorRotation().Roll * -0.5f;
 
-	MyMechCharacter->BotAimTo(MRotator);
+void AMechAIController::UpdateBotPatrol()
+{
+	// PatrolLook Vector
+	// PatrolMove Vector
+
+	/*float GazeRange = 1500000.0f;
+	FVector Offset;
+	Offset.X = FMath::FRandRange(-GazeRange, GazeRange);
+	Offset.Y = FMath::FRandRange(-GazeRange, GazeRange);
+	Offset.Z = FMath::FRandRange(-GazeRange, GazeRange);
+	Offset.Z = MyMechCharacter->GetAimComponent()->GetComponentLocation().Z + FMath::Clamp(Offset.Z, -100.0f, 100.0f);
+	PatrolLookVector = Offset;*/
+
+	float PositionRange = PatrolRange;
+	FVector NewPosition;
+	NewPosition.X = FMath::FRandRange(-PositionRange, PositionRange);
+	NewPosition.Y = FMath::FRandRange(-PositionRange, PositionRange);
+	NewPosition.Z = FMath::FRandRange(-1000.0f, 1000.0f);
+	PatrolMoveVector = NewPosition;
+
+	PatrolLookVector = PatrolMoveVector;
+}
+
+bool AMechAIController::CheckPatrol()
+{
+	bool Result = false;
+	
+	bool Looking = false;
+	FVector Gaze = (MyMechCharacter->GetAimPoint() - MyMechCharacter->GetActorLocation()).GetSafeNormal();
+	FVector NormalPatrol = PatrolLookVector.GetSafeNormal();
+	float DotToLook = FVector::DotProduct(Gaze, NormalPatrol);
+	if (DotToLook >= 0.88f)
+	{
+		Looking = true;
+	}
+
+	bool Waiting = false;
+	float DistToPosition = FVector::Dist(MyMechCharacter->GetActorLocation(), PatrolMoveVector);
+	if (DistToPosition <= 10000.0f)
+	{
+		Waiting = true;
+	}
+
+	Result = Looking || Waiting;
+	return Result;
 }
