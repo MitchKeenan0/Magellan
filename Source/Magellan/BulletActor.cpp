@@ -144,6 +144,7 @@ void ABulletActor::Collide(AActor* OtherActor)
 			
 			if (OtherActor != nullptr)
 			{
+				// Hit a Mech
 				AMechCharacter* HitMech = Cast<AMechCharacter>(OtherActor);
 				if (HitMech != nullptr)
 				{
@@ -156,6 +157,15 @@ void ABulletActor::Collide(AActor* OtherActor)
 
 						MyMechCharacter->ConfirmHit();
 					}
+				}
+
+				UStaticMeshComponent* OtherMesh = Cast<UStaticMeshComponent>(OtherActor->GetComponentByClass(UStaticMeshComponent::StaticClass()));
+				if ((OtherMesh != nullptr) && OtherMesh->IsSimulatingPhysics())
+				{
+					FVector AwayForce = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+					OtherMesh->AddImpulse(AwayForce * 1500.0f, NAME_None, true);
+					
+					///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Physics Hit"));
 				}
 			}
 		}

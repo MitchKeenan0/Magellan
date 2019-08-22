@@ -273,7 +273,7 @@ void AMechCharacter::Tick(float DeltaTime)
 	if (!bDead)
 	{
 		// These need the smoothest of values ;p
-		UpdateLean(DeltaTime);
+		//UpdateLean(DeltaTime);
 		UpdateTorso(DeltaTime);
 
 		if (!bCPU)
@@ -708,6 +708,7 @@ void AMechCharacter::UpdateLean(float DeltaTime)
 	DeltaRotation.Roll = (DeltaRotation.Roll * -0.0314f);
 
 	SetActorRotation(InterpLean);
+	
 	AimComponent->AddRelativeRotation(DeltaRotation * -0.8f);
 }
 
@@ -784,53 +785,53 @@ FVector AMechCharacter::GetLookVector()
 	// Initial aim, in case ray hits nothing
 	FVector Result = AimComponent->GetComponentLocation() + (AimComponent->GetForwardVector() * 550000.0f);
 
-	// Linecast ingredients
-	bool HitResult = false;
-	TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjects;
-	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
-	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
-	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
-	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_PhysicsBody));
-	TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Destructible));
-	FHitResult Hit;
-	
-	// Ignore Torso & Tech
-	TArray<AActor*> IgnoredActors;
-	IgnoredActors.Add(TorsoCollider->GetOwner());
-	int NumTechs = Outfit->HardpointTechs.Num();
-	if (NumTechs > 0)
-	{
-		for (int i = 0; i < NumTechs; ++i)
-		{
-			if (Outfit->HardpointTechs[i] != nullptr)
-			{
-				IgnoredActors.Add(Outfit->HardpointTechs[i]);
-			}
-		}
-	}
-	
-	// Pew pew
-	FVector RaycastVector = CameraComp->GetForwardVector() * 50000.0f; ///AimComponent->GetForwardVector() * 50000.0f;
-	FVector Start = CameraComp->GetComponentLocation(); ///AimComponent->GetComponentLocation();
-	FVector End = Start + RaycastVector;
+	//// Linecast ingredients
+	//bool HitResult = false;
+	//TArray<TEnumAsByte<EObjectTypeQuery>> TraceObjects;
+	//TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+	//TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+	//TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_WorldDynamic));
+	//TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_PhysicsBody));
+	//TraceObjects.Add(UEngineTypes::ConvertToObjectType(ECC_Destructible));
+	//FHitResult Hit;
+	//
+	//// Ignore Torso & Tech
+	//TArray<AActor*> IgnoredActors;
+	//IgnoredActors.Add(TorsoCollider->GetOwner());
+	//int NumTechs = Outfit->HardpointTechs.Num();
+	//if (NumTechs > 0)
+	//{
+	//	for (int i = 0; i < NumTechs; ++i)
+	//	{
+	//		if (Outfit->HardpointTechs[i] != nullptr)
+	//		{
+	//			IgnoredActors.Add(Outfit->HardpointTechs[i]);
+	//		}
+	//	}
+	//}
+	//
+	//// Pew pew
+	//FVector RaycastVector = CameraComp->GetForwardVector() * 50000.0f; ///AimComponent->GetForwardVector() * 50000.0f;
+	//FVector Start = CameraComp->GetComponentLocation(); ///AimComponent->GetComponentLocation();
+	//FVector End = Start + RaycastVector;
 
-	HitResult = UKismetSystemLibrary::LineTraceSingleForObjects(
-		this,
-		Start,
-		End,
-		TraceObjects,
-		false,
-		IgnoredActors,
-		EDrawDebugTrace::None,
-		Hit,
-		true,
-		FLinearColor::Red, FLinearColor::Red, 5.0f);
+	//HitResult = UKismetSystemLibrary::LineTraceSingleForObjects(
+	//	this,
+	//	Start,
+	//	End,
+	//	TraceObjects,
+	//	false,
+	//	IgnoredActors,
+	//	EDrawDebugTrace::None,
+	//	Hit,
+	//	true,
+	//	FLinearColor::Red, FLinearColor::Red, 5.0f);
 
-	static const FName NAME_MyFName(TEXT("Ammo"));
-	if (HitResult && !(Hit.Actor->ActorHasTag(NAME_MyFName)))
-	{
-		Result = Hit.ImpactPoint;
-	}
+	//static const FName NAME_MyFName(TEXT("Ammo"));
+	//if (HitResult && !(Hit.Actor->ActorHasTag(NAME_MyFName)))
+	//{
+	//	Result = Hit.ImpactPoint;
+	//}
 
 	/*if (bThirdPerson)
 	{
@@ -844,14 +845,14 @@ FVector AMechCharacter::GetAimPoint()
 {
 	FVector Result = FVector::ZeroVector;
 	
-	if (Outfit->HardpointTechs.Num() >= (EquipSelectValue + 1))
+	/*if (Outfit->HardpointTechs.Num() >= (EquipSelectValue + 1))
 	{
 		ATechActor* MyPrimaryTech = GetTechActor(EquipSelectValue);
 		if (MyPrimaryTech != nullptr)
 		{
 			Result = MyPrimaryTech->GetAimPoint();
 		}
-	}
+	}*/
 	
 	if (Result == FVector::ZeroVector)
 	{
@@ -945,8 +946,6 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 				}
 				
 				Outfit->HardpointTechs.Insert(NewTech, TechHardpoint);
-				
-				///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Fitted new tech"));
 
 				NewTech->AttachToComponent(TorsoCollider, FAttachmentTransformRules::KeepRelativeTransform);
 				
@@ -956,6 +955,8 @@ void AMechCharacter::BuildTech(int TechID, int TechHardpoint)
 				NewTech->SetActorRelativeRotation(FRotator::ZeroRotator);
 
 				NewTech->InitTechActor(this);
+
+				///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Built new tech"));
 			}
 		}
 	}
@@ -1108,6 +1109,21 @@ void AMechCharacter::TrimOutfit()
 		}
 
 		AvailableTechPointers.Empty();
+	}
+
+	TArray<AActor*> LeftoverTechs;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ATechActor::StaticClass(), LeftoverTechs);
+	if (LeftoverTechs.Num() > 0)
+	{
+		for (int i = 0; i < LeftoverTechs.Num(); i++)
+		{
+			ATechActor* ThisTech = Cast<ATechActor>(LeftoverTechs[i]);
+			if ((ThisTech != nullptr) && !ThisTech->IsEquipped())
+			{
+				ThisTech->DeactivateTech();
+				ThisTech->Destroy();
+			}
+		}
 	}
 }
 
