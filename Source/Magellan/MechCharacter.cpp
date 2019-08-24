@@ -346,7 +346,7 @@ void AMechCharacter::MoveForward(float Value)
 	LastMoveForward = Value;
 
 	// Bring legs around towards look direction
-	if (Value > 0.0f)
+	if (Value != 0.0f)
 	{
 		float LegsAngle = GetLegsToTorsoAngle();
 		float AlignAngleScale = FMath::Clamp(LegsAngle * 0.1f, -1.0f, 1.0f);
@@ -367,13 +367,15 @@ void AMechCharacter::MoveForward(float Value)
 
 void AMechCharacter::MoveTurn(float Value)
 {
+	float TurnSpeedCush = TurnSpeed * 0.6f;
+	
 	AddMovementInput(GetMesh()->GetRightVector(), Value * MoveSpeed * LateralMoveScalar * 0.0001f);
 	
 	FRotator NewRotation = GetActorRotation();
-	NewRotation.Yaw += (Value * TurnSpeed);
+	NewRotation.Yaw += (Value * TurnSpeedCush);
 
 	// Turning and Aim counter-rotation
-	FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), NewRotation, GetWorld()->DeltaTimeSeconds, TurnSpeed);
+	FRotator InterpRotation = FMath::RInterpTo(GetActorRotation(), NewRotation, GetWorld()->DeltaTimeSeconds, TurnSpeedCush);
 	FRotator DeltaRotation = InterpRotation - GetActorRotation();
 	DeltaRotation.Roll = 0.0f;
 

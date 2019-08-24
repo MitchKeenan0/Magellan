@@ -34,7 +34,7 @@ void UGunTechComponent::Fire()
 		float TimeSinceLastFire = GetWorld()->TimeSeconds - LastFireTime;
 		float ManualFireRate = (1.0f / RateOfFire) * 1.1f;
 		if ((RunningShotCount >= ShotsBeforeSpread)
-			|| (TimeSinceLastFire <= ManualFireRate))
+			&& (TimeSinceLastFire <= ManualFireRate))
 		{
 			float CompoundingError = FMath::Clamp(RunningShotCount * AccuracySpread, 1.0f, MaxSpread);
 			FRotator SimpleMiscalculation = FMath::VRand().Rotation() * (0.01f * CompoundingError);

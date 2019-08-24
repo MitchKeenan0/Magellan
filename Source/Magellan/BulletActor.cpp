@@ -56,7 +56,7 @@ void ABulletActor::InitBullet(UTechComponent* Shooter)
 		if (MyMechCharacter != nullptr)
 		{
 			// Inherit bullet velocity from moving shooter
-			FVector MechVelocity = MyMechCharacter->GetVelocity() * 0.3f;
+			FVector MechVelocity = MyMechCharacter->GetVelocity() * 0.88f;
 			FVector CurrentV = ProjectileMovement->Velocity;
 			FVector NewV = CurrentV + MechVelocity;
 			ProjectileMovement->Velocity += NewV;
@@ -159,11 +159,12 @@ void ABulletActor::Collide(AActor* OtherActor)
 					}
 				}
 
+				// Hit a Rigidbody
 				UStaticMeshComponent* OtherMesh = Cast<UStaticMeshComponent>(OtherActor->GetComponentByClass(UStaticMeshComponent::StaticClass()));
 				if ((OtherMesh != nullptr) && OtherMesh->IsSimulatingPhysics())
 				{
 					FVector AwayForce = (OtherActor->GetActorLocation() - GetActorLocation()).GetSafeNormal();
-					OtherMesh->AddImpulse(AwayForce * 1500.0f, NAME_None, true);
+					OtherMesh->AddImpulse(AwayForce * 2100.0f, NAME_None, true);
 					
 					///GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::White, TEXT("Physics Hit"));
 				}
